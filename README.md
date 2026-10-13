@@ -2,7 +2,8 @@
 
 An installable, offline practice app for the Microsoft Fabric certifications. Pick a certification at the top of the hub. DP-700 (Fabric Data Engineer Associate) is built in.
 
-- **4 exams:** three full mock exams (case studies, hot area, drag-and-drop, Yes/No series) and the Stem Decoder quiz. Together they have 219 items.
+- **DP-700:** 4 exams. Three full mock exams (case studies, hot area, drag-and-drop, Yes/No series) and the Stem Decoder quiz. Together they have 219 items.
+- **DP-600:** one 60-item mock exam across the three skill areas, with items checked against Microsoft Learn (each item's source is in a comment above it in `src/content/dp600/`).
 - **Missed-item drill:** everything you got wrong across exams, in one run.
 - **Check answer** on every item, free section jumping, and "retake with missed first".
 - **Reference tabs:**

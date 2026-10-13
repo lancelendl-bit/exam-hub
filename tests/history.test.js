@@ -148,3 +148,19 @@ describe("progress import", () => {
     expect(loadHistory(store).attempts.map((a) => a.at)).toEqual([1, 2, 3]);
   });
 });
+
+describe("topic rules for DP-600", () => {
+  it("classify nearly every item and use every topic", () => {
+    const cert = certOf("dp600");
+    const counts = {};
+    let total = 0;
+    EXAMS.filter((e) => e.cert === "dp600").forEach((e) => e.build().Q.forEach((q) => {
+      total++;
+      const t = topicOf(cert, q);
+      counts[t] = (counts[t] || 0) + 1;
+    }));
+    expect(total).toBeGreaterThanOrEqual(60);
+    expect((counts.other || 0) / total).toBeLessThan(0.1);
+    cert.topics.filter((t) => t.id !== "other").forEach((t) => expect(counts[t.id], t.id).toBeGreaterThan(0));
+  });
+});

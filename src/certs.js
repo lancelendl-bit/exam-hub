@@ -24,6 +24,29 @@ export const CERTS = [
       { id: "other", name: "Other", re: /./ },
     ],
   },
+  {
+    id: "dp600",
+    code: "DP-600",
+    title: "Microsoft Fabric Analytics Engineer Associate",
+    short: "Analytics Engineer",
+    // Skill areas and weights from the Microsoft Learn study guide (skills measured as of October 19, 2026).
+    domains: {
+      1: "Maintain a data analytics solution",
+      2: "Prepare data",
+      3: "Implement and manage semantic models",
+    },
+    topics: [
+      { id: "sec", name: "Security and governance", re: /secur|permission|rls|row-level|column-level|object-level|file-level|folder-level|label|sensitiv|endorse|governance|access control|workspace role|certif|promot/i },
+      { id: "alm", name: "Lifecycle and deployment", re: /\bgit\b|version control|pbip|pbit|pbids|deployment|impact analysis|xmla|template|shared semantic|lineage|\balm\b/i },
+      { id: "dl", name: "Direct Lake and performance", re: /direct lake|fallback|incremental refresh|performance|optimi|aggregation|large semantic|large model|storage format|vertipaq|query folding|slow|framing/i },
+      { id: "query", name: "Querying data", re: /kql|visual query|summarizecolumns|evaluate|query editor|query tool/i },
+      { id: "dax", name: "DAX and calculations", re: /\bdax\b|calculat|measure|iterator|window|offset|variable|format string|field parameter|information function|time intelligence/i },
+      { id: "model", name: "Semantic model design", re: /semantic model|storage mode|import mode|directquery|dual|composite|relationship|bridge|many-to-many|star schema.*(semantic|model)|role-playing/i },
+      { id: "ingest", name: "Getting data", re: /connection|onelake catalog|real-time hub|shortcut|mirror|ingest|pipeline|dataflow|copy job|data store|choose between|eventhouse|eventstream|gateway|notebook/i },
+      { id: "transform", name: "Transforming data", re: /\bview\b|function|stored procedure|star schema|denormal|aggregat|merge|join|duplicate|null|missing|convert|data type|filter|enrich|dimension|fact table|surrogate|identity|ctas|qualify|try_cast|datetime|slowly changing|power query|t-sql|\bsql\b/i },
+      { id: "other", name: "Other", re: /./ },
+    ],
+  },
 ];
 
 export const certOf = (id) => CERTS.find((c) => c.id === id) || CERTS[0];
