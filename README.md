@@ -1,6 +1,6 @@
-# DP-700 Exam Hub
+# Fabric Exam Hub
 
-An installable, offline practice app for **Microsoft DP-700: Fabric Data Engineer Associate**.
+An installable, offline practice app for the Microsoft Fabric certifications. Pick a certification at the top of the hub. DP-700 (Fabric Data Engineer Associate) is built in.
 
 - **4 exams:** three full mock exams (case studies, hot area, drag-and-drop, Yes/No series) and the Stem Decoder quiz. Together they have 219 items.
 - **Missed-item drill:** everything you got wrong across exams, in one run.
@@ -41,6 +41,8 @@ npm run build    # production build in dist/
 |---|---|
 | `index.html` | App shell: top bar, views, progress dialog |
 | `src/main.js` | Hub, exam runner, review, results, drill, view switching |
+| `src/certs.js` | Certification registry: code, title, skill areas |
+| `src/exams.js` | Exam registry: which exams exist and which cert each belongs to |
 | `src/engine/core.js` | Pure logic: seeded shuffle, answer remap, scoring (unit-tested) |
 | `src/content/exam1-4.js` | Question banks. Each returns `{CASES, Q, SECTIONS}` |
 | `src/backup.js` | Progress export / import |

@@ -13,4 +13,6 @@ Vanilla JS + Vite PWA. No framework, on purpose: the engine renders HTML strings
   - Reordering existing items changes their seeds. That's fine, but saved progress maps answers by index.
 - Saved progress is in localStorage under `dp700-hub-<examId>` with schema `v:2`. Don't rename the keys: users move progress with the Progress dialog.
 - Facts must match current Microsoft Learn docs for Fabric. Verify before adding or changing an explanation.
-- To add an exam, add a content module, then add an entry to `EXAMS` in `src/main.js`.
+- To add an exam, add a content module, then add an entry to `EXAMS` in `src/exams.js`. Its `cert` must be an id from `src/certs.js`, and each item's `d` must be one of that cert's `domains` keys.
+- To add a certification, add it to `CERTS` in `src/certs.js`. The hub shows a cert switcher once there is more than one. The DP-700 drill keeps the key `dp700-hub-drill`; other certs use `dp700-hub-drill-<certId>`.
+- Keep the `dp700-hub-` prefix for every key, whatever the cert. The Progress dialog and sync rely on it.

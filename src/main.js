@@ -1,21 +1,12 @@
 import "./styles.css";
 import {rng,permute,inverse,shuffleQ,remap,maxPts,pts,answered,missedFrom,scoreOf} from "./engine/core.js";
-import exam1Content from "./content/exam1.js";
-import exam2Content from "./content/exam2.js";
-import exam3Content from "./content/exam3.js";
-import exam4Content from "./content/exam4.js";
+import {CERTS,certOf} from "./certs.js";
+import {EXAMS,examsOf} from "./exams.js";
 import {initBackup} from "./backup.js";
 import {registerSW} from "virtual:pwa-register";
 registerSW({immediate:true});
 
-/* ---------- Exam registry ---------- */
-const DOMAINS={1:"Implement and manage an analytics solution",2:"Ingest and transform data",3:"Monitor and optimize an analytics solution"};
-const EXAMS=[
- {id:"e1",num:"EXAM I",title:"Mock Exam I",sub:"Original simulation",desc:"One case study, mixed item types, and two no-return series. The broadest first pass over the outline.",build:exam1Content},
- {id:"e2",num:"EXAM II",title:"Mock Exam II",sub:"Full-outline question bank",desc:"All-new items written against every bullet in Microsoft's skills outline and the Learn documentation.",build:exam2Content},
- {id:"e3",num:"EXAM III",title:"Mock Exam III",sub:"From your practice document",desc:"Every scenario from the practice-exam document you supplied, rewritten and re-verified, with items added from its Contoso and Litware cases.",build:exam3Content},
- {id:"e4",num:"QUIZ IV",title:"Stem Decoder Quiz",sub:"Read the stem, find the answer",desc:"Built from the DP-700 Stem Decoder doc: constraint phrases, scenario phrases, security wording, troubleshooting symptoms, and trap words.",build:exam4Content}
-];
+/* ---------- Exam registry: see src/exams.js and src/certs.js ---------- */
 const built={};
 /* seeded shuffle so answer positions carry no signal; stable across reloads */
 function examDef(id){const d=EXAMS.find(e=>e.id===id);if(!built[id]){const c=d.build();c.SECTIONS=c.SECTIONS.map(s=>({...s,desc:s.desc.replace(/ You can review answers before leaving the case, but you can't return afterward\./,"").replace(/ You can review and change answers until you leave the section\./,"").replace(/ After you answer an item and select Next, you can't return to it\./,"")}));c.Q=c.Q.map((q,i)=>shuffleQ({...q,opts:q.opts&&q.opts.slice(),sel:q.sel&&q.sel.map(x=>x.slice()),pool:q.pool&&q.pool.slice(),a:Array.isArray(q.a)?q.a.slice():q.a},id+"#"+i));built[id]=c}return {...d,...built[id]}}
@@ -24,6 +15,14 @@ function migrate(st,Qarr){if(!st||st.v===2)return st;const ans={};Object.keys(st
 /* ---------- State ---------- */
 let E=null,Q=[],CASES=[],SECTIONS=[],KEY="",S=null;
 const PFX="dp700-hub-";
+/* Which certification the hub is showing. The drill for DP-700 keeps its original key so saved progress survives. */
+const PREF_KEY=PFX+"pref";
+function loadPref(){try{const r=JSON.parse(localStorage.getItem(PREF_KEY));if(r&&r.cert)return r}catch(e){}return{}}
+let CERT=certOf(loadPref().cert).id;
+const cert=()=>certOf(CERT);
+const DOMS=()=>cert().domains;
+const drillKey=()=>CERT==="dp700"?"drill":"drill-"+CERT;
+function setCert(id){CERT=certOf(id).id;try{localStorage.setItem(PREF_KEY,JSON.stringify({cert:CERT,at:Date.now()}))}catch(e){}render();window.scrollTo(0,0)}
 function fresh(){return{v:2,phase:"q",sec:0,idx:0,ans:{},mark:{},checked:{},caseTab:0,filter:"all",confirm:false,plan:null,prevMissed:null,lastScore:null}}
 function loadState(id){try{const r=localStorage.getItem(PFX+id);if(r)return JSON.parse(r)}catch(e){}return null}
 function save(){if(!E)return;try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
@@ -53,15 +52,15 @@ function openExam(id,mode){
  else{const missed=mode==="missed"&&st?missedFrom(st,Q):[];S=fresh();if(missed.length){S.plan=planFor(missed);S.prevMissed=missed}}
  save();render();window.scrollTo(0,0)}
 function openDrill(mode){
- const st=loadState("drill");
+ const st=loadState(drillKey());
  let items;
  if(mode==="resume"&&st&&st.items){items=st.items}
- else{items=[];EXAMS.forEach(d=>{const ex=examDef(d.id);const es=migrate(loadState(d.id),ex.Q);missedFrom(es,ex.Q).forEach(i=>items.push({ex:d.id,i}))})}
+ else{items=[];examsOf(CERT).forEach(d=>{const ex=examDef(d.id);const es=migrate(loadState(d.id),ex.Q);missedFrom(es,ex.Q).forEach(i=>items.push({ex:d.id,i}))})}
  if(!items.length)return;
  const cases=[],qs=[];const coff={};
  items.forEach(it=>{const ex=examDef(it.ex);const q={...ex.Q[it.i]};if(q.c!=null){const key=it.ex+":"+q.c;if(coff[key]==null){coff[key]=cases.length;cases.push(ex.CASES[q.c])}q.c=coff[key]}q.s=0;q.src=`${ex.title} · item ${it.i+1}`;qs.push(q)});
- E={id:"drill",num:"DRILL",title:"Missed-item drill",sub:"",Q:qs,CASES:cases,SECTIONS:[{name:"Missed items",desc:`${qs.length} items you missed across the three exams.`,review:true}]};
- Q=E.Q;CASES=E.CASES;SECTIONS=E.SECTIONS;KEY=PFX+"drill";
+ E={id:"drill",num:"DRILL",title:"Missed-item drill",sub:"",Q:qs,CASES:cases,SECTIONS:[{name:"Missed items",desc:`${qs.length} items you missed across your exams.`,review:true}]};
+ Q=E.Q;CASES=E.CASES;SECTIONS=E.SECTIONS;KEY=PFX+drillKey();
  if(mode==="resume"&&st){if(st.v!==2){const ans={};Object.keys(st.ans||{}).forEach(j=>{const it=items[j];const q=it?examDef(it.ex).Q[it.i]:null;ans[j]=q?remap(q,st.ans[j]):st.ans[j]});st.ans=ans;st.v=2}S=st}else{S=fresh();S.items=items}
  save();render();window.scrollTo(0,0)}
 function toHub(){if(E)save();E=null;render();window.scrollTo(0,0)}
@@ -71,7 +70,7 @@ function finish(){S.phase="results";S.finishedAt=Date.now();S.lastScore={...scor
 function render(){
  const app=$("#app");app.className="fade";
  $("#menu").hidden=!E;$("#pills").innerHTML="";$("#prog").textContent="";
- if(!E){$("#secname").textContent="Microsoft Fabric Data Engineer Associate";return hub(app)}
+ if(!E){$("#secname").textContent=cert().title;return hub(app)}
  $("#secname").textContent=E.title+(S.phase==="results"?" · Results":"");
  if(S.phase!=="results"){
   $("#pills").innerHTML=secs().map((s,k)=>`<button class="pill" aria-pressed="${S.phase==="q"&&k===S.sec}" data-sec="${k}"><span class="n">${k+1}</span>${esc(s.name)}</button>`).join("")+`<button class="pill" aria-pressed="${S.phase==="review"}" data-rev="1">Review</button>`;
@@ -84,7 +83,7 @@ function render(){
 }
 
 function hub(app){
- const cards=EXAMS.map(d=>{
+ const cards=examsOf(CERT).map(d=>{
   const ex=examDef(d.id);const st=migrate(loadState(d.id),ex.Q);
   const n=ex.Q.length;const answeredN=st?Object.keys(st.ans).filter(i=>answered(ex.Q[i],st.ans[i])).length:0;
   const missed=st?missedFrom(st,ex.Q).length:0;
@@ -97,20 +96,22 @@ function hub(app){
   return `<article class="card examcard"><span class="num">${d.num}</span><h2>${esc(d.title)}</h2><p class="meta">${esc(d.desc)}</p>
   <p class="meta">${n} items · ${ex.SECTIONS.length} sections: ${ex.SECTIONS.map(s=>esc(s.name)).join(", ")}</p>
   <div class="status">${status}</div><div class="btns">${btns}${st?`<button class="btn small ghost" data-reset="${d.id}">Reset</button>`:""}</div></article>`}).join("");
- const drillSt=loadState("drill");
- let drillCount=0;EXAMS.forEach(d=>{const es=loadState(d.id);if(es)drillCount+=missedFrom(es,examDef(d.id).Q).length});
+ const drillSt=loadState(drillKey());
+ let drillCount=0;examsOf(CERT).forEach(d=>{const es=loadState(d.id);if(es)drillCount+=missedFrom(es,examDef(d.id).Q).length});
  const drill=`<article class="card examcard drill"><span class="num">DRILL</span><h2>Missed-item drill</h2><p class="meta">Every item you got wrong or partly wrong on your most recent attempt of each exam, in one short run. Rebuilt each time you start it.</p>
   <div class="status">${drillCount?`<span class="tag warn">${drillCount} items waiting</span>`:`<span class="tag muted">Nothing missed yet</span>`}${drillSt&&drillSt.phase!=="results"&&drillSt.items?`<span class="prog">A drill is in progress</span>`:""}</div>
   <div class="btns">${drillSt&&drillSt.phase!=="results"&&drillSt.items?`<button class="btn primary" data-drill="resume">Resume drill</button>`:""}<button class="btn ${drillSt&&drillSt.phase!=="results"&&drillSt.items?"":"primary"}" data-drill="new" ${drillCount?"":"disabled"}>Start drill</button></div></article>`;
- app.innerHTML=`<div class="stack">
- <div class="stack" style="gap:8px"><span class="tag">Exam DP-700 · practice</span><h1>Choose an exam</h1>
- <p class="lede">Three full simulations plus a drill of everything you've missed. Each keeps its own progress in this browser. You can move between sections freely while you work; Check answer is available on every item.</p></div>
- <div class="examgrid">${cards}${drill}</div>
+ const switcher=CERTS.length>1?`<div class="certs" role="group" aria-label="Certification">${CERTS.map(c=>`<button class="pill" aria-pressed="${c.id===CERT}" data-cert="${c.id}" title="${esc(c.title)}">${esc(c.code)}<small style="margin-left:6px;font-weight:500">${esc(c.short)}</small></button>`).join("")}</div>`:"";
+ app.innerHTML=`<div class="stack">${switcher}
+ <div class="stack" style="gap:8px"><span class="tag">Exam ${cert().code} · practice</span><h1>Choose an exam</h1>
+ <p class="lede">Full simulations plus a drill of everything you've missed. Each keeps its own progress in this browser. You can move between sections freely while you work; Check answer is available on every item.</p></div>
+ <div class="examgrid">${cards||`<article class="card"><h2>No exams yet</h2><p class="meta">Question banks for ${esc(cert().code)} haven't been added.</p></article>`}${drill}</div>
  <div class="card stack"><h3>On exam day</h3><ul style="margin:0;padding-left:20px;max-width:75ch">
   <li>Passing score is 700 of 1000. Multi-part items award partial credit, so never leave a part blank.</li>
   <li>Budget about 15 minutes per case study and 90 seconds for other items. The real exam does not let you return to a case or a series item once you leave it.</li>
   <li>Read the last sentence of the stem first: it names the constraint that decides the answer (least effort, least privilege, lowest cost).</li>
  </ul></div></div>`;
+ document.querySelectorAll("[data-cert]").forEach(b=>b.onclick=()=>setCert(b.dataset.cert));
  document.querySelectorAll("[data-open]").forEach(b=>b.onclick=()=>openExam(b.dataset.open,b.dataset.mode));
  document.querySelectorAll("[data-drill]").forEach(b=>b.onclick=()=>openDrill(b.dataset.drill));
  document.querySelectorAll("[data-reset]").forEach(b=>b.onclick=()=>{if(b.dataset.armed){clearState(b.dataset.reset);render()}else{b.dataset.armed="1";b.textContent="Confirm reset";b.classList.remove("ghost")}});
@@ -240,10 +241,10 @@ function review(app){
 }
 
 function results(app){
- let tot=0,got=0;const dom={1:[0,0],2:[0,0],3:[0,0]};
+ let tot=0,got=0;const dom=Object.fromEntries(Object.keys(DOMS()).map(k=>[k,[0,0]]));
  Q.forEach((q,i)=>{const m=maxPts(q),p=pts(q,S.ans[i]);tot+=m;got+=p;dom[q.d][0]+=p;dom[q.d][1]+=m});
  const scaled=Math.round(1000*got/tot);const pass=scaled>=700;
- const doms=[1,2,3].filter(d=>dom[d][1]>0);
+ const doms=Object.keys(DOMS()).map(Number).filter(d=>dom[d][1]>0);
  const weakest=doms.slice().sort((x,y)=>dom[x][0]/dom[x][1]-dom[y][0]/dom[y][1])[0];
  const items=Q.map((q,i)=>({q,i,p:pts(q,S.ans[i]),m:maxPts(q)}));
  const f=S.filter;
@@ -255,10 +256,10 @@ function results(app){
   <p>${got} of ${tot} points</p>
   <p class="prog">Microsoft scales scores non-linearly; this is a linear estimate against the 700 cut line.</p></div></div>
  <div class="card stack"><h3>By skill area</h3>
- ${doms.map(d=>{const [p,m]=dom[d],pc=Math.round(100*p/m);return `<div class="dbar"><span>${DOMAINS[d]}</span><div class="track" title="Line marks 70%"><i style="width:${pc}%;background:${pc>=70?"var(--accent)":"var(--warn)"}"></i></div><span class="pct">${pc}%</span></div>`}).join("")}
- ${weakest?`<p class="prog">Weakest area: <b>${DOMAINS[weakest]}</b>. Start your review there.</p>`:""}</div>
+ ${doms.map(d=>{const [p,m]=dom[d],pc=Math.round(100*p/m);return `<div class="dbar"><span>${DOMS()[d]}</span><div class="track" title="Line marks 70%"><i style="width:${pc}%;background:${pc>=70?"var(--accent)":"var(--warn)"}"></i></div><span class="pct">${pc}%</span></div>`}).join("")}
+ ${weakest?`<p class="prog">Weakest area: <b>${DOMS()[weakest]}</b>. Start your review there.</p>`:""}</div>
  <div class="card stack"><div class="row" style="justify-content:space-between"><h3>Answer review</h3>
- <div class="filters">${[["all","All"],["miss","Missed"],["mark","Marked"],["d1","Area 1"],["d2","Area 2"],["d3","Area 3"]].map(([k,l])=>`<button class="chip" aria-pressed="${f===k}" data-f="${k}">${l}</button>`).join("")}</div></div>
+ <div class="filters">${[["all","All"],["miss","Missed"],["mark","Marked"],...Object.keys(DOMS()).map(d=>["d"+d,"Area "+d])].map(([k,l])=>`<button class="chip" aria-pressed="${f===k}" data-f="${k}">${l}</button>`).join("")}</div></div>
  ${shown.length?"":`<p class="prog">Nothing in this filter.</p>`}
  </div>
  ${shown.map(({q,i,p,m})=>`<article class="card stack"><div class="row"><span class="tag ${p===m?"good":p>0?"warn":"bad"}">${p}/${m}</span><span class="prog">Item ${i+1}${q.src?" · "+esc(q.src):""} · ${typeLabel(q)} · Area ${q.d}</span></div>
@@ -282,7 +283,7 @@ function setView(v){VIEW=v;
    f.src=PAGES[k];
    document.getElementById("frames").appendChild(f)}
   if(f)f.hidden=k!==v});
- $("#secname").textContent=ex?(E?E.title:"Microsoft Fabric Data Engineer Associate"):({svc:"Service map",mon:"Monitoring map",stem:"Stem decoder"}[v]);
+ $("#secname").textContent=ex?(E?E.title:cert().title):({svc:"Service map",mon:"Monitoring map",stem:"Stem decoder"}[v]);
  if(ex)render();window.scrollTo(0,0)}
 document.querySelectorAll("#views button").forEach(b=>b.onclick=()=>setView(b.dataset.view));
 $("#brand").onclick=()=>{setView("exams");toHub()};$("#menu").onclick=toHub;

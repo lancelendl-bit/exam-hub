@@ -1,11 +1,27 @@
 import { describe, it, expect } from "vitest";
 import { shuffleQ, remap, pts, maxPts, answered, scoreOf } from "../src/engine/core.js";
-import e1 from "../src/content/exam1.js";
-import e2 from "../src/content/exam2.js";
-import e3 from "../src/content/exam3.js";
-import e4 from "../src/content/exam4.js";
+import { EXAMS as REGISTRY } from "../src/exams.js";
+import { CERTS, certOf } from "../src/certs.js";
 
-const EXAMS = { e1, e2, e3, e4 };
+const EXAMS = Object.fromEntries(REGISTRY.map((e) => [e.id, e.build]));
+
+describe("registry", () => {
+  it("has unique exam ids that point at a real certification", () => {
+    const ids = REGISTRY.map((e) => e.id);
+    expect(new Set(ids).size).toBe(ids.length);
+    REGISTRY.forEach((e) => expect(CERTS.map((c) => c.id), e.id).toContain(e.cert));
+  });
+  it("keeps the ids used by saved progress", () => {
+    ["e1", "e2", "e3", "e4"].forEach((id) => expect(ids(), id).toContain(id));
+    function ids() { return REGISTRY.map((e) => e.id); }
+  });
+  it("every certification has numbered skill areas", () => {
+    CERTS.forEach((c) => {
+      expect(Object.keys(c.domains).length, c.id).toBeGreaterThan(0);
+      Object.keys(c.domains).forEach((k) => expect(Number.isInteger(+k), c.id).toBe(true));
+    });
+  });
+});
 const TYPES = ["single", "multi", "hot", "build", "match", "yesno", "series"];
 const clone = (q) => JSON.parse(JSON.stringify(q));
 
@@ -34,6 +50,7 @@ for (const [id, build] of Object.entries(EXAMS)) {
       Q.forEach((q, i) => {
         const where = `${id} item ${i}`;
         expect(TYPES, where).toContain(q.t);
+        expect(Object.keys(certOf(REGISTRY.find((e) => e.id === id).cert).domains).map(Number), where).toContain(q.d);
         expect(q.s, where).toBeGreaterThanOrEqual(0);
         expect(q.s, where).toBeLessThan(SECTIONS.length);
         if (q.t === "single") expect(q.opts[q.a], where).toBeDefined();
