@@ -1,0 +1,338 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Fabric Service Map</title>
+</head>
+<body style="margin:0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: left-to-right data flow diagram (sources → ingest → OneLake stores → compute → serve) over a governance band, with a detail drawer on the right; tabs switch the drawer between Details, Flows and Glossary */
+:root{
+  --bg:#f3f6f5; --surface:#ffffff; --sunk:#e8eeec; --line:#cfdad6;
+  --fg:#16211f; --muted:#5b6b67; --accent:#0d6b5b; --accent-ink:#ffffff; --accent-soft:#d8ece7;
+  --warn:#9a6200; --warn-soft:#fbecc9; --bad:#b3261e; --bad-soft:#f8dedb;
+  --g-src:#6b7280; --g-ingest:#b45309; --g-store:#0d6b5b; --g-compute:#1d4ed8; --g-serve:#7c3aed; --g-rt:#be185d; --g-gov:#475569;
+  --g-src-s:#eef0f3; --g-ingest-s:#fdeedd; --g-store-s:#d8ece7; --g-compute-s:#dde7fb; --g-serve-s:#ebe0fb; --g-rt-s:#fbe0ec; --g-gov-s:#e6ebf0;
+  --edge:#8a9a95; --edge-ctl:#b45309; --edge-gov:#64748b;
+  --f-body:"Public Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
+  --r:6px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0f1514; --surface:#171f1d; --sunk:#1f2a27; --line:#2f3d39;
+  --fg:#e3ece9; --muted:#9aaba6; --accent:#4fbfa6; --accent-ink:#06211b; --accent-soft:#163a33;
+  --warn:#e8b552; --warn-soft:#3b2d10; --bad:#f08a80; --bad-soft:#41201d;
+  --g-src:#9ca3af; --g-ingest:#f0a64a; --g-store:#4fbfa6; --g-compute:#7ea2f5; --g-serve:#c2a3f7; --g-rt:#f28db6; --g-gov:#a3b2c4;
+  --g-src-s:#262c33; --g-ingest-s:#3a2a14; --g-store-s:#163a33; --g-compute-s:#1b2a4a; --g-serve-s:#2e2246; --g-rt-s:#3f1f2e; --g-gov-s:#242e3a;
+  --edge:#5e6f6a; --edge-ctl:#f0a64a; --edge-gov:#7f8ea1; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0f1514; --surface:#171f1d; --sunk:#1f2a27; --line:#2f3d39;
+  --fg:#e3ece9; --muted:#9aaba6; --accent:#4fbfa6; --accent-ink:#06211b; --accent-soft:#163a33;
+  --warn:#e8b552; --warn-soft:#3b2d10; --bad:#f08a80; --bad-soft:#41201d;
+  --g-src:#9ca3af; --g-ingest:#f0a64a; --g-store:#4fbfa6; --g-compute:#7ea2f5; --g-serve:#c2a3f7; --g-rt:#f28db6; --g-gov:#a3b2c4;
+  --g-src-s:#262c33; --g-ingest-s:#3a2a14; --g-store-s:#163a33; --g-compute-s:#1b2a4a; --g-serve-s:#2e2246; --g-rt-s:#3f1f2e; --g-gov-s:#242e3a;
+  --edge:#5e6f6a; --edge-ctl:#f0a64a; --edge-gov:#7f8ea1; color-scheme:dark}
+*{box-sizing:border-box}
+html,body{background:var(--bg);color:var(--fg)}
+body{font-family:var(--f-body);font-size:15px;line-height:1.5}
+button,input{font:inherit;color:inherit}
+.wrap{max-width:1400px;margin:0 auto;padding-inline:16px;padding-block:18px 48px;display:flex;flex-direction:column;gap:14px}
+header{display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap}
+h1{font-size:24px;margin:0;line-height:1.2}
+h2{font-size:18px;margin:0}
+h3{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin:0}
+p{margin:0}
+.lede{color:var(--muted);max-width:70ch}
+.tools{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.search{position:relative;flex:1;min-width:220px;max-width:360px}
+.search input{width:100%;padding:8px 12px;border:1px solid var(--line);border-radius:var(--r);background:var(--surface)}
+.search ul{position:absolute;left:0;right:0;top:100%;z-index:20;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);margin:4px 0 0;padding:4px;list-style:none;max-height:280px;overflow:auto;box-shadow:0 8px 24px rgba(0,0,0,.12)}
+.search li{padding:6px 8px;border-radius:4px;cursor:pointer;display:flex;gap:8px;align-items:baseline}
+.search li:hover,.search li[aria-selected="true"]{background:var(--accent-soft)}
+.search li small{color:var(--muted)}
+.chip{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:4px 11px;cursor:pointer;font-size:13px;font-weight:600;display:inline-flex;gap:6px;align-items:center}
+.chip i{width:10px;height:10px;border-radius:3px;display:inline-block;background:var(--c)}
+.chip[aria-pressed="false"]{opacity:.45}
+.chip.tog[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.btn{border:1px solid var(--line);background:var(--surface);padding:6px 12px;border-radius:var(--r);cursor:pointer;font-weight:600;font-size:13px}
+.btn:hover,.chip:hover{border-color:var(--accent)}
+.btn:focus-visible,.chip:focus-visible,input:focus-visible,.tab:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.layout{display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:14px;align-items:start}
+@media (max-width:980px){.layout{grid-template-columns:1fr}}
+.canvas{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);overflow:auto;position:relative}
+.canvas svg{display:block;min-width:900px;width:100%;height:auto}
+.zoom{position:absolute;right:10px;top:10px;display:flex;gap:4px;z-index:3}
+.zoom .btn{padding:4px 9px}
+.drawer{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);display:flex;flex-direction:column;min-width:0;position:sticky;top:12px;max-height:calc(100vh - 24px)}
+@media (max-width:980px){.drawer{position:static;max-height:none}}
+.tabs{display:flex;border-bottom:1px solid var(--line)}
+.tab{flex:1;background:none;border:none;border-bottom:2px solid transparent;padding:10px 8px;cursor:pointer;color:var(--muted);font-weight:600}
+.tab[aria-selected="true"]{color:var(--fg);border-color:var(--accent)}
+.panel{padding:16px;overflow:auto;display:flex;flex-direction:column;gap:14px;min-height:320px}
+.kicker{display:inline-flex;align-items:center;gap:8px;font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--c)}
+.kicker i{width:10px;height:10px;border-radius:3px;background:var(--c);display:inline-block}
+.panel ul{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:4px}
+.panel li{font-size:14px}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.link{border:1px solid var(--line);background:var(--sunk);border-radius:999px;padding:3px 10px;font-size:13px;cursor:pointer;display:inline-flex;gap:6px;align-items:center}
+.link:hover{border-color:var(--accent)}
+.link i{width:8px;height:8px;border-radius:2px;background:var(--c);display:inline-block}
+.link small{color:var(--muted)}
+.term{display:flex;flex-direction:column;gap:2px;padding:8px 0;border-bottom:1px solid var(--line)}
+.term b{font-size:14px}
+.term span{font-size:13px;color:var(--muted)}
+.term .where{font-size:12px;color:var(--accent);cursor:pointer;background:none;border:none;padding:0;text-align:left;font-weight:600}
+.trap{border-left:3px solid var(--warn);background:var(--warn-soft);padding:8px 12px;border-radius:0 var(--r) var(--r) 0;font-size:14px}
+.flow{border:1px solid var(--line);border-radius:var(--r);padding:10px 12px;cursor:pointer;display:flex;flex-direction:column;gap:4px;background:var(--surface);text-align:left}
+.flow:hover{border-color:var(--accent)}
+.flow[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-soft)}
+.flow b{font-size:14px}
+.flow span{font-size:13px;color:var(--muted)}
+.steps{display:flex;flex-direction:column;gap:6px}
+.step{display:flex;gap:10px;align-items:flex-start;font-size:14px}
+.step b{font-family:var(--f-mono);color:var(--accent);min-width:1.6em}
+.empty{color:var(--muted);font-size:14px}
+code{font-family:var(--f-mono);font-size:13px;background:var(--sunk);padding:1px 5px;border-radius:4px}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:13px;color:var(--muted);align-items:center}
+.legend svg{vertical-align:middle}
+/* SVG */
+.node{cursor:pointer}
+.node rect{fill:var(--s);stroke:var(--c);stroke-width:1.4;rx:7}
+.node text{fill:var(--fg);font-family:var(--f-body);font-size:12.5px;font-weight:600;pointer-events:none}
+.node .sub{fill:var(--muted);font-weight:500;font-size:10.5px}
+.node.sel rect{stroke-width:3}
+.node.dim{opacity:.22}
+.node.hl rect{stroke-width:2.4;filter:drop-shadow(0 0 4px var(--c))}
+.edge{fill:none;stroke:var(--edge);stroke-width:1.5;opacity:.55;pointer-events:none}
+.edge.ctl{stroke:var(--edge-ctl);stroke-dasharray:5 4}
+.edge.gov{stroke:var(--edge-gov);stroke-dasharray:2 4;opacity:.45}
+.edge.hl{opacity:1;stroke-width:2.6}
+.edge.dim{opacity:.07}
+.elabel{font-family:var(--f-body);font-size:10px;fill:var(--muted);pointer-events:none}
+.band text{font-family:var(--f-body);font-size:11px;font-weight:700;letter-spacing:.1em;fill:var(--muted)}
+.band rect{fill:none;stroke:var(--line);stroke-dasharray:4 4;rx:10}
+.onelake{fill:var(--accent-soft);opacity:.35;rx:14}
+.stepnum circle{fill:var(--accent)}
+.stepnum text{fill:var(--accent-ink);font-family:var(--f-mono);font-size:11px;font-weight:600}
+@media (prefers-reduced-motion:no-preference){.node rect,.edge{transition:opacity .2s,stroke-width .2s}}
+</style>
+
+<div class="wrap">
+ <header>
+  <div><h1>Microsoft Fabric service map</h1><p class="lede">Click a box to see what it does, which items it works with, the lingo attached to it, and the traps DP-700 sets around it. Dashed orange arrows are orchestration; dotted grey links (toggle) are governance.</p></div>
+ </header>
+ <div class="tools">
+  <div class="search"><input id="q" type="search" placeholder="Search services or lingo (e.g. V-Order, framing, innerunique)…" aria-label="Search" autocomplete="off"><ul id="hits" hidden></ul></div>
+  <span id="groupchips"></span>
+  <button class="chip tog" id="govtog" aria-pressed="false">Governance links</button>
+  <button class="btn" id="reset">Clear</button>
+ </div>
+ <div class="layout">
+  <div class="canvas" id="canvas"><div class="zoom"><button class="btn" id="zin" aria-label="Zoom in">+</button><button class="btn" id="zout" aria-label="Zoom out">−</button></div><svg id="svg" role="img" aria-label="Fabric service map"></svg></div>
+  <aside class="drawer">
+   <div class="tabs" role="tablist"><button class="tab" role="tab" aria-selected="true" data-tab="detail">Details</button><button class="tab" role="tab" aria-selected="false" data-tab="flows">Flows</button><button class="tab" role="tab" aria-selected="false" data-tab="gloss">Glossary</button></div>
+   <div class="panel" id="panel"></div>
+  </aside>
+ </div>
+ <div class="legend"><span><svg width="34" height="10"><line x1="0" y1="5" x2="34" y2="5" stroke="var(--edge)" stroke-width="2"/></svg> data moves</span><span><svg width="34" height="10"><line x1="0" y1="5" x2="34" y2="5" stroke="var(--edge-ctl)" stroke-width="2" stroke-dasharray="5 4"/></svg> orchestrates / triggers</span><span><svg width="34" height="10"><line x1="0" y1="5" x2="34" y2="5" stroke="var(--edge-gov)" stroke-width="2" stroke-dasharray="2 4"/></svg> governs / secures</span></div>
+</div>
+
+<script>
+const GROUPS={src:"Sources",ingest:"Ingest",store:"OneLake stores",compute:"Transform",serve:"Serve",rt:"Real-Time",gov:"Manage & govern"};
+
+/* col: 0 sources, 1 ingest, 2 store, 3 compute, 4 serve ; row within column. gov nodes use band rows */
+const N=[
+/* sources */
+{id:"ext_db",g:"src",c:0,r:0,name:"Operational DBs",sub:"Azure SQL · Cosmos · PostgreSQL · Snowflake",what:"Transactional and cloud databases that feed analytics.",feat:["Replicated with mirroring (zero-ETL) or copied with pipelines, Copy job, or Dataflow Gen2","On-premises SQL Server reaches Fabric through the on-premises data gateway","Azure SQL with public access disabled needs a managed private endpoint for Spark"],lingo:[["Mirroring","Continuous replication of a source database into read-only Delta tables in OneLake, no pipeline to maintain."],["CDC","Change data capture: the source emits row changes; Eventstream can consume them for Azure SQL, SQL MI, PostgreSQL, and SQL Server on VMs."]],traps:["Need it in OneLake with minimal latency and no ETL → mirroring, not a scheduled copy."]},
+{id:"ext_files",g:"src",c:0,r:1,name:"Object storage",sub:"ADLS Gen2 · S3 · GCS · Dataverse",what:"Files and tables that stay where they are and are referenced through shortcuts.",feat:["Shortcuts virtualize the data: nothing is copied","Shortcut caching (GCS, S3, S3-compatible, gateway shortcuts; not ADLS) cuts egress; files over 1 GB aren't cached","Firewalled ADLS Gen2 uses trusted workspace access with a workspace identity"],lingo:[["Egress","Cloud provider charge for data leaving its network; the reason shortcut caching exists."],["Trusted workspace access","A resource instance rule on an ADLS Gen2 firewall that lets a Fabric workspace identity in."]],traps:["Caching retention is 1–28 days and resets on each read."]},
+{id:"ext_stream",g:"src",c:0,r:2,name:"Event sources",sub:"Event Hubs · IoT Hub · Kafka · custom endpoint",what:"High-volume event producers consumed by Eventstream.",feat:["Also: Azure Blob Storage events, OneLake events, and Fabric workspace item events for event-driven orchestration"],lingo:[["Custom endpoint","An Eventstream source (or destination) your own app pushes to or pulls from over Event Hubs or Kafka protocols."]],traps:[]},
+{id:"ext_api",g:"src",c:0,r:3,name:"REST APIs & SaaS",sub:"Marketing apps · ERP · public APIs",what:"Endpoints that pipelines or dataflows call with built-in connectors.",feat:["Pipeline REST connector with activity retries handles transient failures","Dataflow Gen2 Web connector for low-code shaping"],lingo:[],traps:["\"Built-in connection, minimal effort, retry\" → pipeline Copy activity, not a notebook with requests."]},
+/* ingest */
+{id:"pipeline",g:"ingest",c:1,r:0,name:"Data pipeline",sub:"Copy · Lookup · ForEach · If · Notebook activity",what:"The control-flow orchestrator. Moves data at scale and runs other items in order.",feat:["Copy activity: 100+ connectors, parallel copy, partition options, staging","Lookup → ForEach (Sequential off = parallel, batch count) → Copy per table","Activity dependencies: On success / On failure / On completion / On skip","Expressions start with @: @pipeline().parameters.x, @activity('A').output.value, @utcNow(), @concat()","Schedules with failure notifications; event triggers through Activator (OneLake, Blob, job, workspace events)","Semantic model refresh, Invoke pipeline, Teams and Outlook activities"],lingo:[["Dynamic content","Pipeline expression language; @{ } interpolates inside strings."],["firstRow vs value","Lookup output: firstRow when First row only is checked, output.value (an array) when it isn't."],["Fail activity","Ends the run as Failed with a custom code and message."]],traps:["Retry is per activity (count + interval).","Notebook exit value is read at @activity('NB').output.result.exitValue."]},
+{id:"dataflow",g:"ingest",c:1,r:1,name:"Dataflow Gen2",sub:"Power Query Online",what:"Low-code transformation for analysts; writes to lakehouse, warehouse, KQL DB, SQL DB.",feat:["Staging: on by default; required for a warehouse destination (same workspace)","Fast copy: files ≥100 MB or ≥5M rows; non-folding transforms in the same query disable it, so split queries","Require fast copy fails the refresh if it can't be used","Navigate using full hierarchy to write to schemas","Incremental refresh; CI/CD-enabled Gen2 supports Git"],lingo:[["Query folding","Pushing Power Query steps down to the source as native queries."],["Staging","Landing data in an internal lakehouse/warehouse so Fabric compute can run the transformations."]],traps:["'Insufficient permissions for accessing staging artifacts' = the creator of the first dataflow in the workspace hasn't signed in for 90 days or left."]},
+{id:"copyjob",g:"ingest",c:1,r:2,name:"Copy job",sub:"Bulk + incremental copy",what:"Standalone item for copying many tables with built-in incremental copy and scheduling.",feat:["Watermark/CDC-style incremental copy without writing lookup logic","Good answer for 'copy N tables hourly, changed rows only, least effort'"],lingo:[],traps:[]},
+{id:"eventstream",g:"ingest",c:1,r:3,name:"Eventstream",sub:"No-code stream processing",what:"Ingests events, transforms them in flight, and fans out to destinations.",feat:["Sources: Event Hubs, IoT Hub, Kafka, CDC, Blob/OneLake/Fabric events, sample data","Operators: Filter, Manage fields, Aggregate, Group by (windows), Join, Union, Expand, SQL operator","Destinations: Eventhouse, Lakehouse, Activator, custom endpoint, derived stream","Monitoring: Data insights and Runtime logs per node; EventStreamErrorMetrics in workspace monitoring"],lingo:[["Tumbling window","Fixed size, no overlap."],["Hopping window","Fixed size, overlapping (size + hop)."],["Sliding window","Emits when an event occurs, window ends at that event."],["Session window","Groups events separated by less than a timeout."],["Snapshot window","Groups events with the same timestamp."],["Derived stream","The output of transformations, reusable as a new stream in Real-Time hub."],["Deserialization error","Incoming events don't match the configured input format (CSV vs JSON)."]],traps:["Expand flattens arrays; Manage fields renames/casts."]},
+{id:"mirror",g:"ingest",c:1,r:4,name:"Mirroring",sub:"Zero-ETL replication",what:"Continuously replicates a database into Delta tables in OneLake.",feat:["Sources: Azure SQL DB/MI, SQL Server 2025, Cosmos DB, PostgreSQL, Snowflake, Oracle, BigQuery, Databricks (metadata)","Open mirroring: your own app writes change data to a landing zone","Read-only in Fabric; query through the mirrored database's SQL analytics endpoint"],lingo:[["Open mirroring","Any application writes Parquet/CSV change files to a landing zone and Fabric turns them into mirrored tables."],["Metadata mirroring","Syncs an external catalog (Unity Catalog) and reaches its data through shortcuts."]],traps:["You can't INSERT/UPDATE mirrored tables with T-SQL."]},
+{id:"shortcut",g:"ingest",c:1,r:5,name:"Shortcut",sub:"Pointer, not a copy",what:"A reference in a lakehouse or KQL database to data elsewhere in OneLake or in external storage.",feat:["Tables section: top level only, Delta only, no spaces in the name","Files section: anywhere, any format","Internal shortcuts use the caller's identity; external ones use a cloud connection plus OneLake security","Deleting a shortcut keeps the target; deleting files through it deletes at the target","Manage shortcut connections page replaces a broken connection for every shortcut at once"],lingo:[["Shortcut path / target path","Where the shortcut appears vs where it points."],["Delegated identity","Direct Lake over SQL and T-SQL delegated mode reach the target as the item owner, not the caller."]],traps:["Access is the most restrictive of shortcut path and target path."]},
+{id:"airflow",g:"ingest",c:1,r:6,name:"Apache Airflow job",sub:"Run existing DAGs",what:"Hosts Airflow inside Fabric so Python DAGs run with minimal rewriting.",feat:["Authenticate to Fabric items with workspace identity (connection must have Allow Code-First Artifacts) or a service principal","Enable triggers in Environment configuration for deferrable operators"],lingo:[["DAG","Directed acyclic graph of tasks with dependencies and a schedule."],["Deferrable operator","A task that waits without holding a worker; needs the triggerer process."]],traps:[]},
+/* stores */
+{id:"lakehouse",g:"store",c:2,r:0,name:"Lakehouse",sub:"Files + Delta Tables + SQL analytics endpoint",what:"Spark-first storage: files and Delta tables in OneLake with a read-only T-SQL endpoint.",feat:["Written by Spark, pipelines, dataflows; read by Spark, T-SQL (endpoint), KQL (shortcut), Direct Lake","Schemas (dbo and more) when schema-enabled","Table maintenance: OPTIMIZE (V-Order), VACUUM (7-day default retention)","SQL analytics endpoint metadata sync is asynchronous; new Spark writes can lag a moment"],lingo:[["Delta Lake","Parquet files plus a transaction log (_delta_log) giving ACID, time travel, and schema enforcement."],["V-Order","Microsoft's Parquet write optimization for fast VertiPaq/Direct Lake reads."],["OPTIMIZE / Z-ORDER","Compacts small files; Z-ORDER colocates values of high-cardinality filter columns."],["VACUUM","Deletes files no longer referenced by the log, older than the retention; breaks time travel beyond it."],["Medallion","Bronze (raw) → Silver (cleansed) → Gold (modeled) layers."],["Materialized lake view","Declarative SQL view materialized as a Delta table with managed refresh."]],traps:["The SQL analytics endpoint is read-only; use a warehouse for T-SQL writes.","Partition on low-cardinality columns; Z-ORDER high-cardinality ones."]},
+{id:"warehouse",g:"store",c:2,r:1,name:"Warehouse",sub:"Full T-SQL · multi-table transactions",what:"SQL-first store with full DML, stored procedures, and SQL security.",feat:["Load with COPY INTO, CTAS, INSERT…SELECT; avoid singleton inserts","MERGE is GA; cross-database queries with three-part names in the same workspace","Constraints via ALTER TABLE only, NOT ENFORCED (PK/UNIQUE also NONCLUSTERED); no DEFAULT constraints, no indexes","Unsupported types: money, datetime, datetimeoffset, nchar/nvarchar, text","Result set caching on by default; data clustering; zero-copy clone tables; time travel","queryinsights views: exec_requests_history, long_running_queries, frequently_run_queries"],lingo:[["CTAS","CREATE TABLE AS SELECT: creates and loads in one parallel statement."],["Cold start","First query pays for cache loading and statistics; data_scanned_remote_storage_mb shows it."],["Clone table","Metadata-only copy at a point in time; carries RLS/CLS/DDM."],["Database project","The .sqlproj/dacpac representation of the warehouse schema used by Git integration."]],traps:["V-Order is on by default in a warehouse; disabling it is irreversible."]},
+{id:"eventhouse",g:"store",c:2,r:2,name:"Eventhouse / KQL database",sub:"Time-series and log store",what:"Kusto engine for high-volume, time-series, and semi-structured event data.",feat:["KQL querysets, Real-Time dashboards, T-SQL subset","Policies: caching (hot period), retention, update policy, partitioning","Materialized views for continuous pre-aggregation","OneLake availability exposes tables as Delta (new data by default; Apply to existing tables backfills)","Shortcuts queried with external_table(); query acceleration caches a hot window","Diagnostics: .show ingestion failures, EventhouseIngestionResultsLogs"],lingo:[["Hot cache","Recent data kept on local SSD; the caching policy sets how many days."],["Update policy","Runs a query on every ingestion into a source table and writes to a target table."],["Query acceleration","Indexes and caches a shortcut's recent data for native-like speed, at storage cost."],["innerunique","KQL's default join flavor: deduplicates left keys before joining."],["arg_max()","Returns the whole row with the maximum value per group."],["mv-expand","One row per array element."],["make-series","Builds a continuous time series, filling gaps with a default."]],traps:["sort by / order by default to descending in KQL."]},
+{id:"sqldb",g:"store",c:2,r:3,name:"SQL database",sub:"Operational SQL in Fabric",what:"A transactional Azure SQL database inside Fabric, mirrored automatically to OneLake.",feat:["Source control with a SQL project; deployment pipelines","Its data appears through a read-only SQL analytics endpoint like a lakehouse"],lingo:[],traps:[]},
+/* compute */
+{id:"notebook",g:"compute",c:3,r:0,name:"Notebook",sub:"PySpark · Spark SQL · Scala · R",what:"Code-first transformation and the place for complex logic, streaming, and ML.",feat:["notebookutils: notebook.run(), runMultiple(DAG), exit(value), credentials.getSecret(vaultUrl, name)","Parameter cell + pipeline base parameters","Delta MERGE for upserts; ROW_NUMBER window for latest-per-key; unionByName; left_anti joins","Structured streaming: readStream/writeStream, checkpointLocation, withWatermark, trigger(availableNow=True)","Errors: AnalysisException table not found (default lakehouse), ModuleNotFoundError (library not in environment), driver OOM (collect())"],lingo:[["Parameter cell","The cell whose variables pipeline base parameters override."],["High concurrency","Several notebooks share one Spark session (default 5, up to 50 via spark.highConcurrency.max)."],["Checkpoint","Streaming state and offsets on disk so a stream resumes exactly once."],["Watermark","How late an event may arrive before its window is finalized."],["Semantic link (SemPy)","Python library to read and refresh semantic models from a notebook."]],traps:["%pip in a cell lasts only for that session; scheduled runs need the environment."]},
+{id:"sjd",g:"compute",c:3,r:1,name:"Spark job definition",sub:"Batch jobs from .py/.jar",what:"Submit compiled or scripted Spark jobs without a notebook UI.",feat:["Same pools and environments as notebooks","Scheduled or called from a pipeline"],lingo:[],traps:[]},
+{id:"env",g:"compute",c:3,r:2,name:"Environment & Spark pools",sub:"Libraries · runtime · compute",what:"Where libraries, Spark properties, and pool sizing live; the workspace sets the default.",feat:["Starter pools: pre-warmed, fast start; custom pools: your node size/autoscale (required with managed private endpoints)","2 Spark vCores = 1 CU; F64 = 128 vCores → max nodes = 128 ÷ node vCores","Workspace Jobs tab: session timeout (default 20 min), max job lifetime (user jobs only), reserve max cores","Resource profiles: writeHeavy, readHeavyForPBI, readHeavyForSpark via spark.fabric.resourceProfile","Native execution engine: vectorized, no code change"],lingo:[["Autoscale / dynamic allocation","Pool grows and shrinks nodes; executors allocated on demand."],["Optimistic job admission","Jobs start with minimum cores; turned off by Reserve maximum cores."],["Autopause","Fixed 2 minutes after a session expires; not configurable."]],traps:["Max job lifetime doesn't touch system jobs like OPTIMIZE and VACUUM."]},
+{id:"tsql",g:"compute",c:3,r:3,name:"T-SQL engine",sub:"Warehouse & SQL analytics endpoint",what:"The SQL compute shared by warehouses and endpoints.",feat:["Security: RLS (inline TVF + CREATE SECURITY POLICY), CLS (GRANT SELECT on columns), DDM (MASKED WITH default/email/partial/random, UNMASK), OLS","Delegated vs user identity mode on SQL analytics endpoints decides how OneLake security applies"],lingo:[["SCHEMABINDING","Required on RLS predicate functions."],["partial(prefix, padding, suffix)","Masking function exposing leading/trailing characters."],["USER_NAME()","Caller identity used in RLS predicates."]],traps:["DDM users can still filter on a masked column; use CLS to block it entirely."]},
+{id:"kql",g:"compute",c:3,r:4,name:"KQL engine",sub:"Kusto Query Language",what:"Pipe-based query language for Eventhouse: where | extend | project | summarize | join.",feat:["summarize count() by bin(Timestamp, 5m)","arg_max(Timestamp, *) for latest per key","join kind=inner|leftouter|…; default innerunique","Management commands start with a dot: .show, .alter, .create"],lingo:[["bin()","Buckets a value (usually time) into fixed intervals."],["ingestion_time()","Function returning when a row arrived; use for late-arriving corrections."],["Stored function","Reusable KQL saved in the database (.create function)."]],traps:["KQL identifiers are case-sensitive; T-SQL in a KQL DB is a subset."]},
+/* serve */
+{id:"sqlep",g:"serve",c:4,r:0,name:"SQL analytics endpoint",sub:"Read-only T-SQL over Delta",what:"Auto-created endpoint for lakehouses, mirrored DBs, SQL DBs, and Eventhouse (with OneLake availability).",feat:["Views, RLS/CLS/DDM, cross-database queries","ReadData item permission = access here only"],lingo:[["ReadData","'Read all data using SQL': SQL endpoint access without OneLake/Spark."],["ReadAll","'Read all Apache Spark': OneLake file access."]],traps:["Metadata sync lag after Spark writes; refresh it or wait."]},
+{id:"semantic",g:"serve",c:4,r:1,name:"Semantic model",sub:"Direct Lake · Import · DirectQuery",what:"The Power BI model; Direct Lake reads Delta from OneLake into VertiPaq.",feat:["Refresh = framing (metadata only, seconds); Keep your Direct Lake data up to date auto-frames","Guardrails per SKU (F32: 300M rows/table, 1,000 files; F64: 1,500M, 5,000 files) → DirectQuery fallback or error","Build permission lets users author reports without data access","Refresh from a pipeline (Semantic model refresh activity) or semantic link"],lingo:[["Framing","Direct Lake refresh that points the model at the latest Delta files."],["Transcoding","Loading Parquet columns into VertiPaq memory on first query."],["DirectQuery fallback","Direct Lake on SQL falls back when guardrails or SQL RLS get in the way; Direct Lake on OneLake errors instead."]],traps:["Auto updates suspend after a non-recoverable error until an on-demand refresh succeeds."]},
+{id:"report",g:"serve",c:4,r:2,name:"Power BI report & dashboard",sub:"Visuals · apps",what:"Consumption layer; dashboards are the one item type that can't be endorsed.",feat:["Reports and semantic models usually live in a separate workspace from engineering items"],lingo:[],traps:[]},
+{id:"rtdash",g:"rt",c:4,r:3,name:"Real-Time dashboard & KQL queryset",sub:"Live KQL visuals",what:"Query and visualize Eventhouse data; both can feed Activator rules on a schedule.",feat:["Queryset = saved KQL queries against one or more databases","Dashboards auto-refresh with parameters and tiles"],lingo:[],traps:[]},
+{id:"activator",g:"rt",c:4,r:4,name:"Activator",sub:"Rules → actions",what:"Watches events or query results and acts when conditions are met.",feat:["Streaming sources: Eventstream, Fabric events, Azure Blob events; query sources: Power BI, KQL queryset, RT dashboard","Actions: Teams/email, Power Automate, run a Fabric item (pipeline, notebook, dataflow, SJD, Copy job)","Backs pipeline event triggers and capacity alerts"],lingo:[["Object / property / rule","Activator's model: a thing (FreezerId), a measured field (Temperature), and a condition on it."]],traps:["Within-a-minute alerting on a stream → Activator, not a scheduled notebook."]},
+{id:"rthub",g:"rt",c:1,r:7,name:"Real-Time hub",sub:"Catalog of streams & events",what:"One place to discover streams, Fabric events, and Azure events and wire them to Eventstream or Activator.",feat:["Fabric workspace item events, OneLake events, job events, capacity events"],lingo:[],traps:[]},
+/* governance band */
+{id:"workspace",g:"gov",c:0,r:0,name:"Workspace & roles",sub:"Admin · Member · Contributor · Viewer",what:"Container for items; roles are control-plane permissions.",feat:["Admin: everything incl. delete workspace; Member: + add users; Contributor: create/edit/run, commit to Git; Viewer: read, see run output","Item sharing scopes access to one item (ReadData, ReadAll, Build, Reshare)","Workspace identity: managed identity for trusted access and Airflow","Pro license mode can't hold Fabric items; assign a capacity"],lingo:[["Least privilege","Pick the lowest role that meets the stated actions."]],traps:["Contributor can't manage access; Member can."]},
+{id:"capacity",g:"gov",c:1,r:0,name:"Capacity (F SKU)",sub:"CU · smoothing · throttling",what:"The compute you pay for; everything in a workspace draws from it.",feat:["Throttling stages: 10 min overage → interactive delay (20 s) → interactive rejection (60 min) → background rejection (24 h)","Surge protection rejects new background jobs above a threshold; never cancels running ones","Spark error 430 = capacity cores exhausted","Strategies: optimize, scale up, scale out, isolate critical workloads"],lingo:[["CU","Capacity unit; 1 CU = 2 Spark vCores."],["Smoothing","Spreading a job's CU over time windows (interactive 5 min, background 24 h)."],["Capacity Metrics app","Where you see CU by item, throttling charts, and system events."]],traps:["Delays at 2 AM during nightly loads = interactive delay throttling; surge protection would reject the loads."]},
+{id:"domain",g:"gov",c:2,r:0,name:"Domains",sub:"Data mesh grouping",what:"Logical groups of workspaces with their own admins and delegated settings.",feat:["Fabric admin creates domains; domain admins manage subdomains and assignments","A tenant setting delegates through domains or capacities, not both","Default domain only auto-assigns new workspaces; it grants no roles"],lingo:[["Domain contributor","Can assign their workspaces to the domain."]],traps:[]},
+{id:"git",g:"gov",c:3,r:0,name:"Git integration",sub:"Azure DevOps · GitHub",what:"One workspace ↔ one branch (and folder). Commit pushes, Update pulls.",feat:["Branch out to another workspace (Contributor+); Checkout new branch / Switch branch (Admin, or Contributor with the setting)","Switching overrides all items; can't switch with uncommitted changes","Conflicts on the same item block Update until resolved","Warehouse commits as a database project; permissions need a post-deployment script"],lingo:[["Branch workspace","A workspace linked to a feature branch created by branch-out."]],traps:["SQL analytics endpoints aren't version-controlled."]},
+{id:"deploy",g:"gov",c:4,r:0,name:"Deployment pipeline",sub:"Dev → Test → Prod",what:"Promotes item definitions between stage workspaces.",feat:["Deployment rules swap connections, parameters, default lakehouse per stage","Selective deployment; folders are replicated; paired items are overwritten","Data, refresh schedules, and credentials aren't copied","Variable library: value sets per stage, one active per workspace, Default active in a new stage, never overwritten by later deployments"],lingo:[["Deployment rule","Per-stage override of a data source or parameter."],["Variable library","Item holding variables (string, item reference, connection reference) with value sets per stage."]],traps:["New stage starts on the Default value set."]},
+{id:"purview",g:"gov",c:5,r:0,name:"Purview, labels & audit",sub:"Sensitivity · endorsement · audit log",what:"Classification, trust signals, and who-did-what records.",feat:["Sensitivity labels travel with exported data; downstream inheritance","Endorsement: Promoted (any writer), Certified and Master data (admin-authorized)","Audit log in the Purview portal (Exchange Online Audit Logs role); Get-PowerBIActivityEvent one day per call","OneLake diagnostics logs data-plane reads to a lakehouse"],lingo:[["Endorsement","Promoted / Certified / Master data badges; not available on dashboards."]],traps:["Control-plane changes (roles, shortcuts, sharing) → Fabric audit log; file reads → OneLake diagnostics."]},
+{id:"olsec",g:"gov",c:6,r:0,name:"OneLake security",sub:"Data-plane roles",what:"Grant-only roles on folders, tables, schemas, rows, and columns, enforced by every Fabric engine.",feat:["Applies to Viewers and Read-permission users; Admin/Member/Contributor bypass","Read or ReadWrite; ReadWrite roles can't carry RLS/CLS","DefaultReader role gives ReadAll users everything until edited","A hide in one role doesn't deny what another role grants"],lingo:[["Data plane vs control plane","What data you can read vs what you can do to the item."]],traps:["Shortcuts to tables with OneLake RLS are blocked in delegated identity mode."]},
+{id:"monitor",g:"gov",c:7,r:0,name:"Monitoring",sub:"Monitoring hub · workspace monitoring · query insights",what:"Where runs, logs, and performance data live.",feat:["Monitoring hub: runs across workspaces (Location column = workspace), Spark application details","Workspace monitoring: logs to an Eventhouse you query with KQL","Semantic model refresh detail pages; Eventstream runtime logs; queryinsights views","Alerts: schedule failure notifications, Activator rules, capacity notifications"],lingo:[["Spark UI / history server","Stage and task level detail for a Spark application."]],traps:[]},
+{id:"network",g:"gov",c:8,r:0,name:"Private connectivity",sub:"Gateway · MPE · trusted access",what:"How Fabric reaches locked-down sources.",feat:["On-premises data gateway: pipelines, dataflows, shortcuts to on-prem/VNet sources","Managed private endpoint: Spark (notebooks, SJD) to private Azure resources; needs custom pools","Trusted workspace access: workspace identity into firewalled ADLS Gen2"],lingo:[["Managed VNet","Workspace-level virtual network created when you add a managed private endpoint; starter pools unavailable."]],traps:["Spark → private Azure SQL = managed private endpoint, not a gateway."]}
+];
+
+const EDGES=[
+ ["ext_db","mirror","mirrors"],["ext_db","pipeline","copy"],["ext_db","copyjob","incremental"],["ext_db","dataflow","Power Query"],["ext_db","eventstream","CDC"],
+ ["ext_files","shortcut","reference"],["ext_files","pipeline","copy"],["ext_files","dataflow","fast copy"],
+ ["ext_stream","eventstream","events"],["ext_api","pipeline","REST"],["ext_api","dataflow","Web"],
+ ["pipeline","lakehouse","Delta"],["pipeline","warehouse","COPY/tables"],["dataflow","lakehouse",""],["dataflow","warehouse","staged"],["dataflow","eventhouse",""],["copyjob","lakehouse",""],["copyjob","warehouse",""],
+ ["eventstream","eventhouse","ingest"],["eventstream","lakehouse","Delta"],["mirror","sqlep","mirrored DB"],["shortcut","lakehouse","Files/Tables"],["shortcut","eventhouse","external_table()"],
+ ["lakehouse","notebook","read"],["notebook","lakehouse","write Delta"],["notebook","eventhouse","Kusto connector"],["sjd","lakehouse",""],["env","notebook","libraries"],["env","sjd",""],
+ ["warehouse","tsql",""],["lakehouse","tsql","endpoint"],["eventhouse","kql",""],
+ ["tsql","sqlep",""],["sqlep","semantic","Direct Lake on SQL"],["lakehouse","semantic","Direct Lake on OneLake"],["warehouse","semantic","Direct Lake"],["semantic","report",""],
+ ["eventhouse","rtdash","KQL"],["eventstream","activator","events"],["rtdash","activator","query rule"],["eventhouse","lakehouse","OneLake availability"],["eventhouse","sqlep","availability"],
+ ["rthub","eventstream","streams & events"],["rthub","activator","events"],["sqldb","sqlep","auto-mirror"],
+ /* control */
+ ["pipeline","notebook","runs",1],["pipeline","dataflow","runs",1],["pipeline","sjd","runs",1],["pipeline","semantic","refresh",1],["pipeline","copyjob","runs",1],
+ ["airflow","notebook","runs",1],["airflow","pipeline","runs",1],["airflow","sjd","runs",1],
+ ["activator","pipeline","trigger",1],["activator","notebook","trigger",1],["ext_stream","activator","Blob/OneLake events",1],
+ /* governance (hidden until toggled) */
+ ["workspace","lakehouse","roles",2],["workspace","warehouse","roles",2],["workspace","pipeline","roles",2],["workspace","notebook","roles",2],["capacity","workspace","compute",2],["capacity","env","CU → vCores",2],["domain","workspace","groups",2],
+ ["git","workspace","commit/update",2],["git","warehouse","database project",2],["deploy","workspace","stages",2],["deploy","pipeline","rules/variables",2],["deploy","notebook","default lakehouse rule",2],
+ ["purview","lakehouse","labels",2],["purview","semantic","endorse",2],["purview","report","labels",2],["olsec","lakehouse","RLS/CLS",2],["olsec","shortcut","path + target",2],["olsec","sqlep","identity mode",2],
+ ["monitor","pipeline","runs",2],["monitor","notebook","Spark UI",2],["monitor","eventstream","runtime logs",2],["monitor","warehouse","queryinsights",2],["monitor","semantic","refresh history",2],["monitor","capacity","Metrics app",2],
+ ["network","pipeline","gateway",2],["network","dataflow","gateway",2],["network","notebook","MPE",2],["network","ext_files","trusted access",2],["network","ext_db","gateway / MPE",2]
+].map(([a,b,l,k])=>({a,b,l:l||"",k:k||0}));
+
+const FLOWS=[
+ {name:"Medallion batch load",desc:"Nightly ERP files → bronze → silver → gold → report, orchestrated by one pipeline.",steps:[["pipeline","Schedule the pipeline; Copy activities land raw files as Delta in bronze (parallel, retry on)."],["lakehouse","Bronze and silver tables live in a lakehouse; VACUUM weekly, OPTIMIZE after big loads."],["notebook","Notebook activities (On success chain) dedupe, fill nulls, standardize; MERGE for SCD2."],["warehouse","Gold star schema in a warehouse: CTAS/INSERT…SELECT, NOT ENFORCED keys."],["semantic","Semantic model refresh activity re-frames Direct Lake when the load succeeds."],["report","Reports read the model; failure branch emails the team via Outlook activity."]]},
+ {name:"Streaming with alerts",desc:"Meter telemetry → Eventstream → Eventhouse + Activator Teams alert, Delta copy for Spark.",steps:[["ext_stream","Devices publish JSON to Event Hubs."],["eventstream","Filter, Expand arrays, Group by with a tumbling window; fan out to two destinations."],["eventhouse","Eventhouse table with 7-day hot cache; materialized view keeps the dashboard fast; OneLake availability on."],["activator","Rule: Voltage > 253 → Teams message within a minute."],["rtdash","Real-Time dashboard over KQL; can also feed scheduled Activator rules."],["lakehouse","A shortcut to the OneLake-available table gives Spark the same data without a second ingestion."]]},
+ {name:"Zero-ETL mirroring to Power BI",desc:"Azure SQL / PostgreSQL → mirrored tables → SQL endpoint → Direct Lake.",steps:[["ext_db","Operational database with public access or a private endpoint."],["mirror","Mirroring replicates changes continuously into read-only Delta tables."],["sqlep","Analysts query with T-SQL; RLS/CLS/DDM apply here."],["semantic","Direct Lake model frames the Delta tables; auto updates keep it fresh."],["report","Reports in a separate workspace, shared with Build permission on the model."]]},
+ {name:"Lakehouse security for Viewers",desc:"Analysts hold Viewer only; they read gold tables and only their region.",steps:[["workspace","Assign Viewer; don't use Contributor (it bypasses data-plane rules)."],["olsec","OneLake security role: Read on the gold tables with an RLS rule on Region."],["lakehouse","Spark, SQL endpoint, and Direct Lake all honor the role."],["sqlep","Share with ReadData if they only need T-SQL; user identity mode passes their identity to OneLake."],["shortcut","Shortcuts resolve as the most restrictive of both paths; delegated mode blocks RLS-protected sources."]]},
+ {name:"CI/CD promotion",desc:"Branch out, commit, deploy Dev → Test → Prod with per-stage values.",steps:[["git","Branch out to a feature workspace; commit from the Source control pane; merge via pull request; Update all."],["warehouse","Warehouse schema commits as a database project; GRANTs go in a post-deployment script."],["deploy","Deployment pipeline promotes items; deployment rules rebind default lakehouses and connections."],["pipeline","Pipelines read connection/item reference variables from a variable library."],["workspace","In the new stage, set the stage's value set active once; later deployments never change it."]]},
+ {name:"Event-driven file processing",desc:"A file lands in OneLake → pipeline runs immediately.",steps:[["lakehouse","A CSV lands under Files/raw/orders/."],["rthub","OneLake FileCreated event is available in Real-Time hub."],["activator","Pipeline Trigger button creates an Activator rule filtered on Subject contains '/raw/orders/'."],["pipeline","Action: Run a Fabric item → the pipeline ingests and transforms the file, no schedule needed."]]},
+ {name:"Capacity throttling",desc:"What happens when nightly loads overload the capacity, and the fixes.",steps:[["capacity","Background jobs consume the next 10 minutes of CU → interactive delay (20 s), then rejection."],["monitor","Capacity Metrics app: Throttling charts, 24-hour background %, system events."],["env","Right-size Spark pools and use resource profiles; stop idle sessions (20-min timeout)."],["workspace","Scale up the SKU or move the load workspaces to another capacity; surge protection would reject the loads."]]}
+];
+
+/* ---------- Layout ---------- */
+const COLX=[20,250,520,790,1060];const COLW=200;const NH=48;const ROWH=60;const TOP=58;
+const GOVY=610;const GOVX=20;const GOVW=140;const GOVGAP=152;
+const byId={};N.forEach(n=>byId[n.id]=n);
+N.forEach(n=>{
+ if(n.g==="gov"){n.x=GOVX+n.c*GOVGAP;n.y=GOVY;n.w=GOVW;n.h=56}
+ else{n.x=COLX[n.c];n.y=TOP+n.r*ROWH;n.w=COLW;n.h=NH}
+});
+/* rthub sits under ingest column */
+byId.rthub.y=TOP+7*ROWH;
+const W=1400,H=700;
+let scale=1,govOn=false,groupOn={src:1,ingest:1,store:1,compute:1,serve:1,rt:1,gov:1},sel=null,flow=null;
+
+const svg=document.getElementById("svg");
+function colorOf(g){return `var(--g-${g})`}function softOf(g){return `var(--g-${g}-s)`}
+function path(e){
+ const a=byId[e.a],b=byId[e.b];
+ if(a.g==="gov"||b.g==="gov"){
+  const g=a.g==="gov"?a:b,o=a.g==="gov"?b:a;
+  const x1=g.x+g.w/2,y1=g.y,x2=o.x+o.w/2,y2=o.y+o.h;
+  return `M${x1},${y1} C${x1},${y1-60} ${x2},${y2+60} ${x2},${y2}`}
+ let x1,y1,x2,y2;
+ if(b.x>a.x){x1=a.x+a.w;y1=a.y+a.h/2;x2=b.x;y2=b.y+b.h/2}
+ else if(b.x<a.x){x1=a.x;y1=a.y+a.h/2;x2=b.x+b.w;y2=b.y+b.h/2}
+ else{x1=a.x+a.w/2;y1=a.y+(b.y>a.y?a.h:0);x2=b.x+b.w/2;y2=b.y+(b.y>a.y?0:b.h);return `M${x1},${y1} C${x1+30},${y1} ${x2+30},${y2} ${x2},${y2}`}
+ const dx=(x2-x1)/2;return `M${x1},${y1} C${x1+dx},${y1} ${x2-dx},${y2} ${x2},${y2}`}
+function build(){
+ let s=`<defs><marker id="m" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--edge)"/></marker><marker id="mc" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--edge-ctl)"/></marker></defs>`;
+ s+=`<rect class="onelake" x="${COLX[2]-18}" y="${TOP-30}" width="${COLW+36}" height="${4*ROWH+40}"/>`;
+ const bands=[["SOURCES",0],["INGEST",1],["ONELAKE STORES",2],["TRANSFORM",3],["SERVE",4]];
+ bands.forEach(([t,c])=>{s+=`<g class="band"><text x="${COLX[c]+COLW/2}" y="${TOP-14}" text-anchor="middle">${t}</text></g>`});
+ s+=`<g class="band"><rect x="10" y="${GOVY-34}" width="${W-20}" height="${56+48}"/><text x="24" y="${GOVY-16}">MANAGE · GOVERN · MONITOR</text></g>`;
+ EDGES.forEach((e,i)=>{s+=`<path id="e${i}" class="edge ${e.k===1?"ctl":e.k===2?"gov":""}" d="${path(e)}" marker-end="url(#${e.k===1?"mc":"m"})" ${e.k===2&&!govOn?'style="display:none"':""}/>`});
+ N.forEach(n=>{s+=`<g class="node" data-id="${n.id}" style="--c:${colorOf(n.g)};--s:${softOf(n.g)}" tabindex="0" role="button" aria-label="${esc(n.name)}"><rect x="${n.x}" y="${n.y}" width="${n.w}" height="${n.h}"/><text x="${n.x+10}" y="${n.y+(n.sub?19:28)}">${esc(n.name)}</text>${n.sub?`<text class="sub" x="${n.x+10}" y="${n.y+35}"><tspan>${esc(trunc(n.sub,n.w))}</tspan></text>`:""}</g>`});
+ s+=`<g id="stepnums"></g>`;
+ svg.setAttribute("viewBox",`0 0 ${W} ${H}`);svg.innerHTML=s;
+ svg.querySelectorAll(".node").forEach(g=>{g.onclick=()=>select(g.dataset.id);g.onkeydown=e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();select(g.dataset.id)}};g.onmouseenter=()=>hover(g.dataset.id);g.onmouseleave=()=>hover(null)});
+ applyState()}
+function trunc(t,w){const max=Math.floor((w-16)/6.1);return t.length>max?t.slice(0,max-1)+"…":t}
+function neighbors(id){const ids=new Set([id]),es=[];EDGES.forEach((e,i)=>{if(e.k===2&&!govOn)return;if(e.a===id||e.b===id){ids.add(e.a);ids.add(e.b);es.push(i)}});return{ids,es}}
+function applyState(){
+ const nodes=svg.querySelectorAll(".node"),edges=svg.querySelectorAll(".edge");
+ nodes.forEach(g=>{const n=byId[g.dataset.id];g.classList.toggle("dim",!groupOn[n.g]);g.classList.remove("sel","hl")});
+ edges.forEach((p,i)=>{const e=EDGES[i];p.style.display=(e.k===2&&!govOn)?"none":"";p.classList.remove("hl","dim");const off=!groupOn[byId[e.a].g]||!groupOn[byId[e.b].g];p.classList.toggle("dim",off)});
+ document.getElementById("stepnums").innerHTML="";
+ if(flow!=null){const f=FLOWS[flow];const ids=f.steps.map(s=>s[0]);
+  nodes.forEach(g=>{g.classList.toggle("dim",!ids.includes(g.dataset.id));g.classList.toggle("hl",ids.includes(g.dataset.id))});
+  edges.forEach((p,i)=>{const e=EDGES[i];const ia=ids.indexOf(e.a),ib=ids.indexOf(e.b);const on=ia>=0&&ib>=0&&Math.abs(ia-ib)===1;p.classList.toggle("hl",on);p.classList.toggle("dim",!on)});
+  document.getElementById("stepnums").innerHTML=f.steps.map(([id],k)=>{const n=byId[id];return `<g class="stepnum"><circle cx="${n.x+n.w-12}" cy="${n.y+12}" r="10"/><text x="${n.x+n.w-12}" y="${n.y+16}" text-anchor="middle">${k+1}</text></g>`}).join("");
+  return}
+ if(sel){const {ids,es}=neighbors(sel);
+  nodes.forEach(g=>{g.classList.toggle("dim",!ids.has(g.dataset.id)||!groupOn[byId[g.dataset.id].g]);g.classList.toggle("sel",g.dataset.id===sel)});
+  edges.forEach((p,i)=>{p.classList.toggle("hl",es.includes(i));p.classList.toggle("dim",!es.includes(i))})}}
+function hover(id){if(sel||flow!=null||!id)return;const {ids,es}=neighbors(id);svg.querySelectorAll(".edge").forEach((p,i)=>p.classList.toggle("hl",es.includes(i)))}
+function select(id){flow=null;sel=id;tab="detail";renderTabs();applyState();panel()}
+
+/* ---------- Drawer ---------- */
+let tab="detail";
+const P=document.getElementById("panel");
+function renderTabs(){document.querySelectorAll(".tab").forEach(t=>t.setAttribute("aria-selected",t.dataset.tab===tab))}
+document.querySelectorAll(".tab").forEach(t=>t.onclick=()=>{tab=t.dataset.tab;renderTabs();panel()});
+const esc=t=>String(t).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+function chipFor(id,label){const n=byId[id];return `<button class="link" data-go="${id}" style="--c:${colorOf(n.g)}"><i></i>${esc(n.name)}${label?`<small>${esc(label)}</small>`:""}</button>`}
+function panel(){
+ if(tab==="gloss")return glossary();
+ if(tab==="flows")return flows();
+ if(!sel){P.innerHTML=`<p class="empty">Select a service on the map, pick a flow, or search for a term.</p><h3>Groups</h3><ul>${Object.entries(GROUPS).map(([g,l])=>`<li><span class="kicker" style="--c:${colorOf(g)}"><i></i>${l}</span></li>`).join("")}</ul><h3>Read it like this</h3><ul><li>Data flows left to right: sources → ingest → stores → transform → serve.</li><li>The green band is OneLake: every store writes Delta there.</li><li>Toggle Governance links to see who secures, promotes, and monitors what.</li></ul>`;return}
+ const n=byId[sel];const out=EDGES.filter(e=>e.a===sel&&(govOn||e.k!==2)),inn=EDGES.filter(e=>e.b===sel&&(govOn||e.k!==2));
+ P.innerHTML=`<div><span class="kicker" style="--c:${colorOf(n.g)}"><i></i>${GROUPS[n.g]}</span><h2 style="margin-top:4px">${esc(n.name)}</h2>${n.sub?`<p class="empty">${esc(n.sub)}</p>`:""}</div>
+ <p>${esc(n.what)}</p>
+ ${n.feat.length?`<div><h3>Key features</h3><ul>${n.feat.map(f=>`<li>${esc(f)}</li>`).join("")}</ul></div>`:""}
+ ${out.length?`<div><h3>Sends to / runs</h3><div class="chips">${out.map(e=>chipFor(e.b,e.l)).join("")}</div></div>`:""}
+ ${inn.length?`<div><h3>Receives from / governed by</h3><div class="chips">${inn.map(e=>chipFor(e.a,e.l)).join("")}</div></div>`:""}
+ ${n.lingo.length?`<div><h3>Lingo</h3>${n.lingo.map(([t,d])=>`<div class="term"><b>${esc(t)}</b><span>${esc(d)}</span></div>`).join("")}</div>`:""}
+ ${n.traps.length?`<div><h3>Exam traps</h3><div class="stack" style="display:flex;flex-direction:column;gap:6px">${n.traps.map(t=>`<div class="trap">${esc(t)}</div>`).join("")}</div></div>`:""}
+ <div><a href="https://learn.microsoft.com/en-us/search/?terms=${encodeURIComponent("Microsoft Fabric "+n.name)}" target="_blank" rel="noopener" style="color:var(--accent);font-size:13px;font-weight:600">Microsoft Learn: ${esc(n.name)} ↗</a></div>`;
+ P.querySelectorAll("[data-go]").forEach(b=>b.onclick=()=>select(b.dataset.go))}
+function flows(){
+ P.innerHTML=`<p class="empty">Pick a scenario to light up its path on the map, step by step.</p><div style="display:flex;flex-direction:column;gap:8px">${FLOWS.map((f,i)=>`<button class="flow" aria-pressed="${flow===i}" data-f="${i}"><b>${esc(f.name)}</b><span>${esc(f.desc)}</span></button>`).join("")}</div>
+ ${flow!=null?`<div><h3>Steps</h3><div class="steps">${FLOWS[flow].steps.map(([id,t],k)=>`<div class="step"><b>${k+1}</b><div><button class="link" data-go="${id}" style="--c:${colorOf(byId[id].g)}"><i></i>${esc(byId[id].name)}</button><div style="margin-top:4px">${esc(t)}</div></div></div>`).join("")}</div></div>`:""}`;
+ P.querySelectorAll("[data-f]").forEach(b=>b.onclick=()=>{flow=flow===+b.dataset.f?null:+b.dataset.f;sel=null;applyState();flows()});
+ P.querySelectorAll("[data-go]").forEach(b=>b.onclick=()=>select(b.dataset.go))}
+const TERMS=[];N.forEach(n=>n.lingo.forEach(([t,d])=>TERMS.push({t,d,id:n.id})));TERMS.sort((a,b)=>a.t.localeCompare(b.t));
+let gq="";
+function glossary(){
+ const list=TERMS.filter(x=>!gq||(x.t+" "+x.d).toLowerCase().includes(gq.toLowerCase()));
+ P.innerHTML=`<input id="gq" type="search" placeholder="Filter ${TERMS.length} terms…" value="${esc(gq)}" style="padding:8px 12px;border:1px solid var(--line);border-radius:var(--r);background:var(--surface)" aria-label="Filter glossary">
+ <div>${list.map(x=>`<div class="term"><b>${esc(x.t)}</b><span>${esc(x.d)}</span><button class="where" data-go="${x.id}">${esc(byId[x.id].name)} →</button></div>`).join("")||`<p class="empty">No terms match.</p>`}</div>`;
+ const inp=P.querySelector("#gq");inp.oninput=()=>{gq=inp.value;const pos=inp.selectionStart;glossary();const i2=P.querySelector("#gq");i2.focus();i2.setSelectionRange(pos,pos)};
+ P.querySelectorAll("[data-go]").forEach(b=>b.onclick=()=>select(b.dataset.go))}
+
+/* ---------- Tools ---------- */
+const gc=document.getElementById("groupchips");
+gc.innerHTML=Object.entries(GROUPS).map(([g,l])=>`<button class="chip" data-g="${g}" aria-pressed="true" style="--c:${colorOf(g)}"><i></i>${l}</button>`).join("");
+gc.querySelectorAll("[data-g]").forEach(b=>b.onclick=()=>{groupOn[b.dataset.g]=!groupOn[b.dataset.g];b.setAttribute("aria-pressed",String(!!groupOn[b.dataset.g]));applyState()});
+const gt=document.getElementById("govtog");gt.onclick=()=>{govOn=!govOn;gt.setAttribute("aria-pressed",String(govOn));applyState();if(sel)panel()};
+document.getElementById("reset").onclick=()=>{sel=null;flow=null;Object.keys(groupOn).forEach(k=>groupOn[k]=1);gc.querySelectorAll("[data-g]").forEach(b=>b.setAttribute("aria-pressed","true"));applyState();tab="detail";renderTabs();panel()};
+document.getElementById("zin").onclick=()=>{scale=Math.min(2,scale+.2);zoom()};document.getElementById("zout").onclick=()=>{scale=Math.max(.6,scale-.2);zoom()};
+function zoom(){svg.style.width=(100*scale)+"%";svg.style.minWidth=(900*scale)+"px"}
+/* search */
+const qi=document.getElementById("q"),hits=document.getElementById("hits");let hi=-1;
+function searchItems(v){v=v.trim().toLowerCase();if(!v)return[];const r=[];
+ N.forEach(n=>{if(n.name.toLowerCase().includes(v)||(n.sub||"").toLowerCase().includes(v))r.push({t:n.name,s:GROUPS[n.g],id:n.id})});
+ TERMS.forEach(x=>{if(x.t.toLowerCase().includes(v)||x.d.toLowerCase().includes(v))r.push({t:x.t,s:"term · "+byId[x.id].name,id:x.id})});
+ return r.slice(0,12)}
+function showHits(){const r=searchItems(qi.value);hits.hidden=!r.length;hi=-1;hits.innerHTML=r.map((x,i)=>`<li data-id="${x.id}" aria-selected="false">${esc(x.t)}<small>${esc(x.s)}</small></li>`).join("");hits.querySelectorAll("li").forEach(li=>li.onmousedown=()=>{pick(li.dataset.id)})}
+function pick(id){select(id);hits.hidden=true;qi.value=""}
+qi.oninput=showHits;qi.onfocus=showHits;qi.onblur=()=>setTimeout(()=>hits.hidden=true,150);
+qi.onkeydown=e=>{const lis=[...hits.querySelectorAll("li")];if(!lis.length)return;if(e.key==="ArrowDown"){hi=Math.min(lis.length-1,hi+1)}else if(e.key==="ArrowUp"){hi=Math.max(0,hi-1)}else if(e.key==="Enter"){if(hi>=0)pick(lis[hi].dataset.id);else pick(lis[0].dataset.id);return}else if(e.key==="Escape"){hits.hidden=true;return}else return;e.preventDefault();lis.forEach((li,i)=>li.setAttribute("aria-selected",String(i===hi)))};
+
+build();panel();
+</script>
+
+</body>
+</html>

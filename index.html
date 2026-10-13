@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>DP-700 Exam Hub</title>
+<meta name="description" content="Practice exams, drills and reference maps for Microsoft DP-700 (Fabric Data Engineer Associate).">
+<meta name="theme-color" content="#0d6b5b" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0f1514" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="DP-700">
+<link rel="icon" href="icons/icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
+</head>
+<body>
+
+<div class="bar"><div class="bar-in">
+  <button class="brand" id="brand">DP-700 Exam Hub<small id="secname">Microsoft Fabric Data Engineer Associate</small></button>
+  <nav class="views" id="views" aria-label="Views"><button data-view="exams" aria-pressed="true">Exams</button><button data-view="svc" aria-pressed="false">Service map</button><button data-view="mon" aria-pressed="false">Monitoring map</button><button data-view="stem" aria-pressed="false">Stem decoder</button></nav>
+  <div class="pills" id="pills"></div>
+  <div class="spacer"></div>
+  <span class="prog" id="prog"></span>
+  <button class="btn small ghost" id="menu" hidden>Menu</button>
+  <button class="btn small ghost" id="backup" title="Move progress between devices">Progress</button>
+</div></div>
+<main id="app"></main>
+<div id="frames"></div>
+
+<dialog id="backupDlg" class="dlg" aria-labelledby="bkTitle">
+ <form method="dialog" class="stack">
+  <h2 id="bkTitle">Move your progress</h2>
+  <p class="meta">Progress is stored on this device. To continue on another device, export here and import there.</p>
+  <div class="row"><button type="button" class="btn primary" id="bkExport">Export to file</button><button type="button" class="btn" id="bkCopy">Copy as text</button></div>
+  <label class="meta" for="bkText">Import: choose a file or paste exported text</label>
+  <input type="file" id="bkFile" accept="application/json,.json">
+  <textarea id="bkText" rows="4" placeholder='{"dp700-hub-e1": ...}'></textarea>
+  <p class="meta" id="bkMsg" role="status"></p>
+  <div class="row"><button type="button" class="btn" id="bkImport">Import</button><span class="spacer"></span><button class="btn ghost" value="close">Close</button></div>
+ </form>
+</dialog>
+<script type="module" src="/src/main.js"></script>
+</body>
+</html>

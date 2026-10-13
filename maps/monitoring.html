@@ -1,0 +1,268 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Fabric Monitoring Map</title>
+</head>
+<body style="margin:0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: matrix of what-is-monitored (rows) × monitoring tool (columns); dot size = primary vs secondary; side panel explains the circumstance; below, a symptom finder */
+:root{
+  --bg:#f3f6f5; --surface:#ffffff; --sunk:#e8eeec; --line:#cfdad6;
+  --fg:#16211f; --muted:#5b6b67; --accent:#0d6b5b; --accent-ink:#ffffff; --accent-soft:#d8ece7;
+  --warn:#9a6200; --warn-soft:#fbecc9;
+  --c-run:#1d4ed8; --c-cap:#b45309; --c-sql:#0d6b5b; --c-rt:#be185d; --c-gov:#475569; --c-alert:#7c3aed;
+  --f-body:"Public Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace; --r:6px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0f1514; --surface:#171f1d; --sunk:#1f2a27; --line:#2f3d39;
+  --fg:#e3ece9; --muted:#9aaba6; --accent:#4fbfa6; --accent-ink:#06211b; --accent-soft:#163a33;
+  --warn:#e8b552; --warn-soft:#3b2d10;
+  --c-run:#7ea2f5; --c-cap:#f0a64a; --c-sql:#4fbfa6; --c-rt:#f28db6; --c-gov:#a3b2c4; --c-alert:#c2a3f7; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0f1514; --surface:#171f1d; --sunk:#1f2a27; --line:#2f3d39;
+  --fg:#e3ece9; --muted:#9aaba6; --accent:#4fbfa6; --accent-ink:#06211b; --accent-soft:#163a33;
+  --warn:#e8b552; --warn-soft:#3b2d10;
+  --c-run:#7ea2f5; --c-cap:#f0a64a; --c-sql:#4fbfa6; --c-rt:#f28db6; --c-gov:#a3b2c4; --c-alert:#c2a3f7; color-scheme:dark}
+*{box-sizing:border-box}
+html,body{background:var(--bg);color:var(--fg)}
+body{font-family:var(--f-body);font-size:15px;line-height:1.5;margin:0}
+button,input{font:inherit;color:inherit}
+.wrap{max-width:1400px;margin:0 auto;padding-inline:16px;padding-block:18px 48px;display:flex;flex-direction:column;gap:16px}
+h1{font-size:24px;margin:0;line-height:1.2}
+h2{font-size:18px;margin:0}
+h3{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin:0}
+p{margin:0}
+.lede{color:var(--muted);max-width:75ch}
+.layout{display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:14px;align-items:start}
+@media (max-width:1000px){.layout{grid-template-columns:1fr}}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r)}
+.mx{overflow:auto}
+table.m{border-collapse:separate;border-spacing:0;font-size:13px}
+table.m th,table.m td{border-bottom:1px solid var(--line);border-right:1px solid var(--line)}
+table.m thead th{position:sticky;top:0;background:var(--surface);z-index:2;vertical-align:bottom;padding:8px 4px;height:170px;min-width:44px}
+table.m thead th .v{writing-mode:vertical-rl;transform:rotate(180deg);white-space:nowrap;font-weight:600;font-size:12.5px;display:inline-flex;gap:6px;align-items:center;cursor:pointer}
+table.m thead th .v i{width:9px;height:9px;border-radius:2px;background:var(--c);display:inline-block}
+table.m thead th.corner{text-align:left;vertical-align:bottom;padding:10px;min-width:220px;position:sticky;left:0;z-index:3}
+table.m tbody th{position:sticky;left:0;background:var(--surface);text-align:left;font-weight:600;padding:6px 10px;white-space:nowrap;cursor:pointer;z-index:1}
+table.m tbody th small{display:block;color:var(--muted);font-weight:500;font-size:11.5px}
+table.m td{text-align:center;padding:0;width:44px;height:40px}
+table.m td button{width:100%;height:100%;border:none;background:none;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.dot{width:14px;height:14px;border-radius:50%;background:var(--c)}
+.dot.sec{width:9px;height:9px;opacity:.55}
+td.on:hover,td.sel{background:var(--accent-soft)}
+tr.hl th,th.hl,td.hl{background:var(--accent-soft)}
+.dim{opacity:.25}
+.groupband td{background:var(--sunk);font-size:11px;font-weight:700;letter-spacing:.08em;color:var(--muted);text-align:left;padding:4px 10px;height:auto}
+.panel{padding:16px;display:flex;flex-direction:column;gap:12px;position:sticky;top:12px;max-height:calc(100vh - 24px);overflow:auto}
+@media (max-width:1000px){.panel{position:static;max-height:none}}
+.kicker{display:inline-flex;align-items:center;gap:8px;font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--c)}
+.kicker i{width:10px;height:10px;border-radius:3px;background:var(--c);display:inline-block}
+.panel ul{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:6px}
+.panel li{font-size:14px}
+.pair{border:1px solid var(--line);border-radius:var(--r);padding:10px 12px;display:flex;flex-direction:column;gap:4px;cursor:pointer;background:var(--surface);text-align:left}
+.pair:hover{border-color:var(--accent)}
+.pair b{font-size:14px}
+.pair span{font-size:13px;color:var(--muted)}
+.trap{border-left:3px solid var(--warn);background:var(--warn-soft);padding:8px 12px;border-radius:0 var(--r) var(--r) 0;font-size:14px}
+.legend{display:flex;gap:16px;flex-wrap:wrap;font-size:13px;color:var(--muted);align-items:center}
+.legend span{display:inline-flex;gap:6px;align-items:center}
+.legend i{width:10px;height:10px;border-radius:3px;display:inline-block;background:var(--c)}
+.finder{padding:16px;display:flex;flex-direction:column;gap:12px}
+.finder input{padding:8px 12px;border:1px solid var(--line);border-radius:var(--r);background:var(--surface);max-width:420px}
+.ftable{width:100%;border-collapse:collapse;font-size:14px}
+.ftable th,.ftable td{border-bottom:1px solid var(--line);padding:8px;text-align:left;vertical-align:top}
+.ftable th{font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+.ftable td.tool{white-space:nowrap;font-weight:600}
+.ftable td.tool i{width:9px;height:9px;border-radius:2px;display:inline-block;background:var(--c);margin-right:6px}
+.empty{color:var(--muted);font-size:14px}
+button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+</style>
+
+<div class="wrap">
+ <div><h1>What monitors what, and when</h1><p class="lede">Rows are the things you monitor; columns are the monitoring tools. A large dot is the go-to tool for that item; a small dot also covers it. Click a dot for the circumstance, or a row or column header for everything it touches.</p></div>
+ <div class="legend" id="legend"></div>
+ <div class="layout">
+  <div class="card mx"><table class="m" id="mx"></table></div>
+  <aside class="card panel" id="panel"></aside>
+ </div>
+ <div class="card finder">
+  <h2>Symptom finder</h2>
+  <p class="lede">The stem describes what someone sees or asks. Find the phrase, read off the tool.</p>
+  <input id="fq" type="search" placeholder="Filter: CU, refresh, failed, who, slow, Spark…" aria-label="Filter symptoms">
+  <div style="overflow-x:auto"><table class="ftable" id="ft"></table></div>
+ </div>
+</div>
+
+<script>
+const TG={run:"Run history",cap:"Capacity",sql:"Query & engine",rt:"Real-Time",gov:"Audit & security",alert:"Alerting"};
+const TOOLS=[
+ {id:"hub",g:"run",name:"Monitoring hub",what:"Central list of item runs (pipelines, notebooks, SJDs, dataflows, semantic model refreshes, Copy jobs) across every workspace you can see. Filter by status, item type, time, submitter; Location column = workspace. Drill into run details and Spark application pages.",trap:"It shows run status, not CU cost. CU by item is the Capacity Metrics app."},
+ {id:"pipeout",g:"run",name:"Pipeline Output tab",what:"Per-run activity status, input/output JSON, duration, and error messages for each activity inside a pipeline run.",trap:"Read activity output here when building expressions (output.value, output.firstRow, output.result.exitValue)."},
+ {id:"refresh",g:"run",name:"Refresh history",what:"Dataflow Gen2 and semantic model refresh pages: status per query/table, engine used (fast copy shows CopyActivity), errors, warnings, and execution metrics.",trap:"Direct Lake refresh failures appear on the Direct Lake tab; successful framings often aren't listed."},
+ {id:"sparkui",g:"run",name:"Spark UI / history server",what:"Jobs, stages, tasks, executors, and SQL plans for one Spark application. Opened from the notebook or the Monitoring hub run.",trap:"One long task among many short ones = skew; look at stage task duration distribution here."},
+ {id:"capm",g:"cap",name:"Capacity Metrics app",what:"CU consumption by item and operation, smoothing, throttling charts (interactive delay, interactive rejection, background rejection), 24-hour background %, system events like SurgeProtectionActive.",trap:"Only place that answers 'which item burns the most CU' and 'is the capacity throttled'."},
+ {id:"capnote",g:"cap",name:"Capacity notifications",what:"Admin-configured banner and email when a capacity approaches or enters throttling or surge protection, and when it recovers.",trap:""},
+ {id:"qi",g:"sql",name:"queryinsights views",what:"T-SQL views in a warehouse or SQL endpoint: exec_requests_history (30 days, status, data_scanned_remote_storage_mb, query hash, label), long_running_queries, frequently_run_queries, exec_sessions_history.",trap:"sys.dm_exec_requests shows only running queries; history lives in queryinsights."},
+ {id:"dmv",g:"sql",name:"DMVs (sys.dm_exec_*)",what:"Live view of currently running requests, sessions, and connections in a warehouse; KILL a runaway session.",trap:""},
+ {id:"semlink",g:"sql",name:"Semantic link (notebook)",what:"SemPy in a notebook triggers a semantic model refresh and polls its status programmatically, or reads model metadata.",trap:"'Dynamically execute and monitor the refresh' = semantic link, not the Monitoring hub."},
+ {id:"esmon",g:"rt",name:"Eventstream Data insights & Runtime logs",what:"Per-node metrics (incoming/outgoing events, backlog) and runtime logs with severity for sources and destinations; schema-validation drops appear here.",trap:"Events in but destination empty + deserialization errors = input format mismatch."},
+ {id:"ehsys",g:"rt",name:"Eventhouse system overview & .show commands",what:"Eventhouse storage, compute, ingestion rate, top databases; KQL management commands like .show ingestion failures, .show streamingingestion failures, .show queries, .show commands.",trap:".show ingestion failures covers queued ingestion; streaming has its own command. FailureKind Permanent won't succeed on retry."},
+ {id:"wsmon",g:"rt",name:"Workspace monitoring",what:"Opt-in per workspace: creates a read-only monitoring Eventhouse with log tables (semantic model queries, Eventhouse queries/ingestion results, Eventstream metrics and diagnostics, GraphQL, mirrored DB) you query with KQL.",trap:"'Detailed operation logs queried with KQL' = workspace monitoring."},
+ {id:"mirrormon",g:"rt",name:"Mirroring monitor page",what:"Replication status per table, rows replicated, last completed time, and errors for a mirrored database.",trap:""},
+ {id:"audit",g:"gov",name:"Fabric audit log (Purview)",what:"Who did what to which item: create, delete, share, role and OneLake security changes, tenant setting changes, Git operations. Search in the Purview portal (Exchange Online Audit Logs role) or Get-PowerBIActivityEvent (one day per call).",trap:"Control-plane only. File reads through OneLake APIs are OneLake diagnostics."},
+ {id:"oldiag",g:"gov",name:"OneLake diagnostics",what:"Data-plane access events through OneLake APIs, written to a lakehouse you choose.",trap:""},
+ {id:"activator",g:"alert",name:"Activator rules",what:"Watch Eventstream data, Fabric events (job status, OneLake file events, workspace item events), Azure Blob events, or KQL/Power BI query results; act with Teams, email, Power Automate, or run a Fabric item.",trap:"'Alert within a minute when a value crosses X' = Activator on the stream."},
+ {id:"failnote",g:"alert",name:"Schedule failure notifications",what:"Recipients added on a pipeline schedule get an email when a scheduled run fails.",trap:"Least-effort answer for 'email on-call when the scheduled pipeline fails'."}
+];
+const IG={work:"Jobs & items",data:"Stores & engines",rt:"Real-Time",plat:"Platform"};
+const ITEMS=[
+ {id:"pipeline",g:"work",name:"Data pipeline",sub:"runs, activities"},
+ {id:"copyjob",g:"work",name:"Copy job",sub:"bulk/incremental copy"},
+ {id:"dataflow",g:"work",name:"Dataflow Gen2",sub:"refreshes"},
+ {id:"notebook",g:"work",name:"Notebook / Spark job",sub:"sessions, applications"},
+ {id:"semantic",g:"work",name:"Semantic model",sub:"refresh, queries"},
+ {id:"airflow",g:"work",name:"Apache Airflow job",sub:"DAG runs"},
+ {id:"warehouse",g:"data",name:"Warehouse / SQL endpoint",sub:"T-SQL queries"},
+ {id:"lakehouse",g:"data",name:"Lakehouse & OneLake files",sub:"reads, table health"},
+ {id:"mirror",g:"data",name:"Mirrored database",sub:"replication"},
+ {id:"eventstream",g:"rt",name:"Eventstream",sub:"events in/out, errors"},
+ {id:"eventhouse",g:"rt",name:"Eventhouse / KQL DB",sub:"ingestion, queries"},
+ {id:"capacity",g:"plat",name:"Capacity",sub:"CU, throttling"},
+ {id:"security",g:"plat",name:"User & admin activity",sub:"sharing, roles, deletes"}
+];
+/* [item, tool, primary(1)/secondary(0), circumstance] */
+const L=[
+ ["pipeline","hub",1,"Did last night's run succeed, when did it start, who triggered it, which workspace (Location)."],
+ ["pipeline","pipeout",1,"Which activity failed and why; inspect a Lookup's output to build the ForEach expression."],
+ ["pipeline","failnote",1,"Email someone automatically when a scheduled run fails."],
+ ["pipeline","activator",0,"Alert or start another item on job events (pipeline succeeded/failed) from Real-Time hub."],
+ ["pipeline","capm",0,"How many CU the pipeline's copy operations consumed."],
+ ["pipeline","audit",0,"Who edited, ran, or deleted the pipeline."],
+ ["copyjob","hub",1,"Run status and rows copied per run."],
+ ["copyjob","capm",0,"CU used by the copy operations."],
+ ["dataflow","refresh",1,"Which query failed, error text, whether fast copy (CopyActivity engine) was used."],
+ ["dataflow","hub",1,"Refresh runs across workspaces with status and duration."],
+ ["dataflow","capm",0,"CU by refresh; staging compute shows here."],
+ ["notebook","hub",1,"Run status for interactive, scheduled, and pipeline-triggered notebooks; open the Spark application detail."],
+ ["notebook","sparkui",1,"Why it's slow: skewed tasks, spill, shuffle size, executor usage, SQL plan."],
+ ["notebook","capm",0,"Spark CU burn; 430 errors mean capacity cores are exhausted."],
+ ["notebook","activator",0,"Run a notebook when an event fires, or alert on notebook job failure."],
+ ["semantic","refresh",1,"Refresh status, retries, warnings, execution metrics; Direct Lake tab for framing failures."],
+ ["semantic","hub",1,"Refresh activities across workspaces with a detail page per refresh."],
+ ["semantic","semlink",1,"Trigger a refresh from code and poll its progress."],
+ ["semantic","wsmon",0,"Query-level logs (DAX durations, errors) with KQL."],
+ ["semantic","capm",0,"Interactive CU from report queries; interactive delay or rejection."],
+ ["airflow","hub",0,"Runs of the Fabric items the DAG triggers."],
+ ["airflow","capm",0,"CU used by the Airflow job."],
+ ["warehouse","qi",1,"Slowest or most frequent queries over 30 days, failed queries by hash, cold-start reads (data_scanned_remote_storage_mb)."],
+ ["warehouse","dmv",1,"What's running right now; kill a runaway session."],
+ ["warehouse","capm",0,"Warehouse CU and whether queries are being throttled."],
+ ["warehouse","audit",0,"Who granted permissions or shared the warehouse."],
+ ["lakehouse","oldiag",1,"Who read which files through OneLake APIs."],
+ ["lakehouse","audit",1,"Shortcut creation, sharing, OneLake security role changes."],
+ ["lakehouse","sparkui",0,"Small-file symptoms show as many tiny tasks when reading the table."],
+ ["lakehouse","activator",0,"React to OneLake file created/deleted events."],
+ ["mirror","mirrormon",1,"Per-table replication status, last sync, errors."],
+ ["mirror","wsmon",0,"Mirrored database execution logs with KQL."],
+ ["mirror","capm",0,"Replication CU (storage writes)."],
+ ["eventstream","esmon",1,"Events in vs out per node, runtime errors, deserialization and schema drops."],
+ ["eventstream","wsmon",1,"EventStreamErrorMetrics and EventStreamDiagnosticLogs over time with KQL."],
+ ["eventstream","activator",0,"Alert on values flowing through the stream."],
+ ["eventstream","capm",0,"Eventstream CU."],
+ ["eventhouse","ehsys",1,"Ingestion rate, storage, top queries; .show ingestion failures for failed loads."],
+ ["eventhouse","wsmon",1,"EventhouseIngestionResultsLogs and query logs across time."],
+ ["eventhouse","activator",0,"Scheduled KQL query or Real-Time dashboard rule that alerts."],
+ ["eventhouse","capm",0,"Eventhouse CU and always-on compute."],
+ ["capacity","capm",1,"CU by item, throttling stage, 24-hour background %, surge protection events."],
+ ["capacity","capnote",1,"Banner and email when throttling or surge protection starts and ends."],
+ ["capacity","activator",0,"Capacity events in Real-Time hub can drive alerts."],
+ ["security","audit",1,"Who deleted, shared, changed roles, changed tenant settings."],
+ ["security","oldiag",0,"Who actually read data files."]
+];
+const FIND=[
+ ["Which item consumes the most CU / capacity is throttled","capm"],
+ ["Report users wait ~20 seconds; interactive delay","capm"],
+ ["Notify admins when the capacity is throttled","capnote"],
+ ["Did a pipeline/notebook run succeed; which workspace it ran in","hub"],
+ ["Which activity in a pipeline failed and its error","pipeout"],
+ ["Email someone when a scheduled pipeline fails, least effort","failnote"],
+ ["Dataflow refresh failed overnight: which query","refresh"],
+ ["Was fast copy used in a dataflow refresh","refresh"],
+ ["Semantic model refresh warnings or Direct Lake framing failure","refresh"],
+ ["Dynamically execute and monitor a semantic model refresh","semlink"],
+ ["One Spark task runs much longer than others","sparkui"],
+ ["Which Delta/runtime version a notebook run used","hub"],
+ ["Slowest warehouse queries in the past 30 days","qi"],
+ ["Queries that failed more than once","qi"],
+ ["First query each morning is slow (cold start)","qi"],
+ ["What's running in the warehouse right now","dmv"],
+ ["Events arrive but the destination is empty","esmon"],
+ ["Eventstream error counts over time with KQL","wsmon"],
+ ["Eventhouse loads failing; will a retry help","ehsys"],
+ ["Detailed workspace operation logs queried with KQL","wsmon"],
+ ["Mirrored table not updating","mirrormon"],
+ ["Who deleted / shared an item or changed a role","audit"],
+ ["Who changed OneLake security roles","audit"],
+ ["Who read files through OneLake APIs","oldiag"],
+ ["Teams alert within a minute when a streamed value crosses a threshold","activator"],
+ ["Run a pipeline when a file lands","activator"]
+];
+const tById={},iById={};TOOLS.forEach(t=>tById[t.id]=t);ITEMS.forEach(i=>iById[i.id]=i);
+const col=g=>`var(--c-${g})`;
+const esc=t=>String(t).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const link=(i,t)=>L.find(l=>l[0]===i&&l[1]===t);
+let sel=null;
+
+document.getElementById("legend").innerHTML=Object.entries(TG).map(([g,n])=>`<span style="--c:${col(g)}"><i></i>${n}</span>`).join("")+`<span><span class="dot" style="--c:var(--muted)"></span>go-to tool</span><span><span class="dot sec" style="--c:var(--muted)"></span>also covers</span>`;
+
+function drawMatrix(){
+ let h=`<thead><tr><th class="corner"><h3>Monitored ↓ · Tool →</h3></th>${TOOLS.map(t=>`<th data-t="${t.id}"><span class="v" style="--c:${col(t.g)}" data-t="${t.id}"><i></i>${esc(t.name)}</span></th>`).join("")}</tr></thead><tbody>`;
+ let lastG=null;
+ ITEMS.forEach(it=>{
+  if(it.g!==lastG){h+=`<tr class="groupband"><td colspan="${TOOLS.length+1}">${IG[it.g].toUpperCase()}</td></tr>`;lastG=it.g}
+  h+=`<tr data-i="${it.id}"><th data-i="${it.id}">${esc(it.name)}<small>${esc(it.sub)}</small></th>${TOOLS.map(t=>{const l=link(it.id,t.id);return l?`<td class="on" data-i="${it.id}" data-t="${t.id}"><button aria-label="${esc(it.name)} in ${esc(t.name)}"><span class="dot ${l[2]?"":"sec"}" style="--c:${col(t.g)}"></span></button></td>`:`<td data-i="${it.id}" data-t="${t.id}"></td>`}).join("")}</tr>`;
+ });
+ h+="</tbody>";
+ const mx=document.getElementById("mx");mx.innerHTML=h;
+ mx.querySelectorAll("td.on").forEach(td=>td.onclick=()=>{sel={i:td.dataset.i,t:td.dataset.t};update()});
+ mx.querySelectorAll("tbody th[data-i]").forEach(th=>th.onclick=()=>{sel={i:th.dataset.i};update()});
+ mx.querySelectorAll("thead th[data-t]").forEach(th=>th.onclick=()=>{sel={t:th.dataset.t};update()});
+}
+function update(){
+ const mx=document.getElementById("mx");
+ mx.querySelectorAll("td,th").forEach(e=>e.classList.remove("hl","sel","dim"));
+ if(sel){
+  mx.querySelectorAll("tbody td[data-i],tbody th[data-i]").forEach(e=>{
+   const inRow=sel.i&&e.dataset.i===sel.i, inCol=sel.t&&e.dataset.t===sel.t;
+   if(sel.i&&sel.t){if(inRow&&inCol)e.classList.add("sel");else if(inRow||inCol)e.classList.add("hl")}
+   else if(inRow||inCol)e.classList.add("hl");
+  });
+  mx.querySelectorAll("thead th[data-t]").forEach(e=>{if(e.dataset.t===sel.t)e.classList.add("hl")});
+ }
+ panel()}
+function panel(){
+ const P=document.getElementById("panel");
+ if(!sel){P.innerHTML=`<h2>How to use this</h2><ul><li>Click a <b>dot</b> for the exact circumstance that pairs an item with a tool.</li><li>Click a <b>row</b> (left) for every way to monitor that item.</li><li>Click a <b>column</b> (top) for what that tool covers and its exam trap.</li><li>Use the symptom finder below when a stem describes what someone sees.</li></ul><div class="trap">Rule of thumb: <b>status</b> → Monitoring hub · <b>cost/throttling</b> → Capacity Metrics · <b>who did it</b> → audit log · <b>why slow</b> → Spark UI or queryinsights · <b>stream errors</b> → Eventstream logs · <b>alert</b> → Activator.</div>`;return}
+ if(sel.i&&sel.t){const it=iById[sel.i],t=tById[sel.t],l=link(sel.i,sel.t);
+  P.innerHTML=`<span class="kicker" style="--c:${col(t.g)}"><i></i>${l[2]?"Go-to tool":"Also covers"}</span><h2>${esc(it.name)} → ${esc(t.name)}</h2><div><h3>Use it when</h3><p style="margin-top:4px">${esc(l[3])}</p></div><div><h3>About ${esc(t.name)}</h3><p style="margin-top:4px;font-size:14px">${esc(t.what)}</p></div>${t.trap?`<div class="trap">${esc(t.trap)}</div>`:""}`+back();bindBack();return}
+ if(sel.i){const it=iById[sel.i];const ls=L.filter(l=>l[0]===sel.i).sort((a,b)=>b[2]-a[2]);
+  P.innerHTML=`<span class="kicker" style="--c:var(--accent)"><i></i>${IG[it.g]}</span><h2>Monitoring ${esc(it.name)}</h2>${ls.map(l=>{const t=tById[l[1]];return `<button class="pair" data-i="${l[0]}" data-t="${l[1]}"><b><span class="kicker" style="--c:${col(t.g)};text-transform:none;letter-spacing:0;font-size:14px"><i></i>${esc(t.name)}</span>${l[2]?"":" <small style='color:var(--muted);font-weight:500'>(also)</small>"}</b><span>${esc(l[3])}</span></button>`}).join("")}`+back();bindPairs();bindBack();return}
+ const t=tById[sel.t];const ls=L.filter(l=>l[1]===sel.t).sort((a,b)=>b[2]-a[2]);
+ P.innerHTML=`<span class="kicker" style="--c:${col(t.g)}"><i></i>${TG[t.g]}</span><h2>${esc(t.name)}</h2><p style="font-size:14px">${esc(t.what)}</p>${t.trap?`<div class="trap">${esc(t.trap)}</div>`:""}<h3>Covers</h3>${ls.map(l=>`<button class="pair" data-i="${l[0]}" data-t="${l[1]}"><b>${esc(iById[l[0]].name)}${l[2]?"":" <small style='color:var(--muted);font-weight:500'>(also)</small>"}</b><span>${esc(l[3])}</span></button>`).join("")}`+back();bindPairs();bindBack()}
+function back(){return `<button class="pair" id="clr" style="align-items:center"><b>Clear selection</b></button>`}
+function bindBack(){const b=document.getElementById("clr");if(b)b.onclick=()=>{sel=null;update()}}
+function bindPairs(){document.querySelectorAll("#panel .pair[data-i]").forEach(b=>b.onclick=()=>{sel={i:b.dataset.i,t:b.dataset.t};update()})}
+function finder(){const q=document.getElementById("fq").value.trim().toLowerCase();
+ const rows=FIND.filter(([s,t])=>!q||(s+" "+tById[t].name).toLowerCase().includes(q));
+ document.getElementById("ft").innerHTML=`<thead><tr><th>Stem says</th><th>Tool</th></tr></thead><tbody>${rows.map(([s,t])=>`<tr><td>${esc(s)}</td><td class="tool" style="--c:${col(tById[t].g)}"><i></i>${esc(tById[t].name)}</td></tr>`).join("")||`<tr><td colspan="2" class="empty">No match.</td></tr>`}</tbody>`}
+document.getElementById("fq").oninput=finder;
+drawMatrix();update();finder();
+</script>
+
+</body>
+</html>

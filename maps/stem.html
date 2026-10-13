@@ -1,0 +1,238 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>DP-700 Stem Decoder</title>
+</head>
+<body style="margin:0">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+:root{
+  --bg:#f3f6f5; --surface:#ffffff; --sunk:#e8eeec; --line:#cfdad6;
+  --fg:#16211f; --muted:#5b6b67; --accent:#0d6b5b; --accent-ink:#ffffff; --accent-soft:#d8ece7;
+  --warn:#9a6200; --warn-soft:#fbecc9;
+  --c-run:#1d4ed8; --c-cap:#b45309; --c-sql:#0d6b5b; --c-rt:#be185d; --c-gov:#475569; --c-alert:#7c3aed;
+  --f-body:"Public Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace; --r:6px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0f1514; --surface:#171f1d; --sunk:#1f2a27; --line:#2f3d39;
+  --fg:#e3ece9; --muted:#9aaba6; --accent:#4fbfa6; --accent-ink:#06211b; --accent-soft:#163a33;
+  --warn:#e8b552; --warn-soft:#3b2d10;
+  --c-run:#7ea2f5; --c-cap:#f0a64a; --c-sql:#4fbfa6; --c-rt:#f28db6; --c-gov:#a3b2c4; --c-alert:#c2a3f7; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0f1514; --surface:#171f1d; --sunk:#1f2a27; --line:#2f3d39;
+  --fg:#e3ece9; --muted:#9aaba6; --accent:#4fbfa6; --accent-ink:#06211b; --accent-soft:#163a33;
+  --warn:#e8b552; --warn-soft:#3b2d10;
+  --c-run:#7ea2f5; --c-cap:#f0a64a; --c-sql:#4fbfa6; --c-rt:#f28db6; --c-gov:#a3b2c4; --c-alert:#c2a3f7; color-scheme:dark}
+
+*{box-sizing:border-box}
+html,body{background:var(--bg);color:var(--fg)}
+body{font-family:var(--f-body);font-size:15px;line-height:1.5;margin:0}
+button,input{font:inherit;color:inherit}
+.wrap{max-width:1100px;margin:0 auto;padding:18px 16px 64px;display:flex;flex-direction:column;gap:18px}
+h1{font-size:24px;margin:0;line-height:1.2}
+h2{font-size:18px;margin:0 0 4px}
+p{margin:0}
+.lede{color:var(--muted);max-width:75ch}
+.bar{position:sticky;top:0;z-index:2;background:var(--bg);padding:10px 0;display:flex;flex-wrap:wrap;gap:8px;align-items:center;border-bottom:1px solid var(--line)}
+.bar input{flex:1 1 240px;min-width:0;padding:8px 12px;border:1px solid var(--line);border-radius:var(--r);background:var(--surface)}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chips a{font-size:13px;font-weight:600;text-decoration:none;color:var(--accent);background:var(--accent-soft);padding:4px 10px;border-radius:999px}
+.count{font-size:13px;color:var(--muted)}
+section{display:flex;flex-direction:column;gap:8px;scroll-margin-top:70px}
+section .sub{color:var(--muted);font-size:14px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);overflow:auto}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{text-align:left;vertical-align:top;padding:8px 12px;border-bottom:1px solid var(--line)}
+th{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);background:var(--sunk);position:sticky;top:0}
+td:first-child{font-weight:600;width:38%}
+td.wrong{color:var(--warn)}
+tr:last-child td{border-bottom:0}
+code,.mono{font-family:var(--f-mono);font-size:12.5px}
+ol,ul{margin:0;padding-left:22px;display:flex;flex-direction:column;gap:6px}
+.card.pad{padding:14px 16px}
+mark{background:var(--warn-soft);color:inherit;border-radius:2px}
+.empty{color:var(--muted);font-size:14px;padding:10px 12px}
+@media (max-width:640px){td:first-child{width:auto}th.hidesm,td.hidesm{display:none}}
+</style>
+<div class="wrap">
+ <header>
+  <h1>DP-700 Stem Decoder</h1>
+  <p class="lede">The last sentence of a stem names the constraint that decides between two answers that would both work. Read it first, then match the phrase below.</p>
+ </header>
+ <div class="bar">
+  <input id="q" type="search" placeholder="Filter phrases, e.g. least privilege, mirroring, VACUUM">
+  <span class="count" id="count"></span>
+  <nav class="chips" id="chips"></nav>
+ </div>
+ <section id="how">
+  <h2>How to read a stem</h2>
+  <div class="card pad"><ol>
+   <li><b>Read the ask and the constraint.</b> "What should you use? The solution must minimize development effort." Now you know the scoring rule before you see the scenario.</li>
+   <li><b>Scan the scenario for keywords.</b> Circle the source, the target, the people, and any number: data volume, latency, a role, a SKU.</li>
+   <li><b>Eliminate before you choose.</b> Cross out options that break a stated requirement, then pick the one that best satisfies the constraint. Two options often both work; only one is the <i>least</i> effort, cost, or privilege.</li>
+  </ol></div>
+ </section>
+ <div id="tables"></div>
+ <section id="traps">
+  <h2>Trap words and distractor patterns</h2>
+  <p class="sub">Small words in the stem flip the answer; distractors are usually real features used in the wrong place.</p>
+  <div class="card pad" id="trapcard"></div>
+ </section>
+</div>
+<script>
+const T=[
+{id:"constraint",h:"Constraint phrases",sub:"These closing phrases rank otherwise-valid answers. Match the phrase, then pick the option shaped like the middle column.",cols:["Stem says","Points to","Typical wrong pick"],rows:[
+["Minimize development effort / least effort","A built-in feature or setting: mirroring, Copy job, shortcut, deployment rule, Fail activity, activity retry","A notebook or custom code that also works"],
+["Minimize administrative effort","One central setting: workspace default environment, tenant setting scoped to a group, variable library","Configuring every item one by one"],
+["Without custom ETL / no pipeline to maintain","Mirroring","Scheduled Copy activity"],
+["Must not be copied / avoid data duplication","OneLake shortcut, OneLake availability","Pipeline or Dataflow copy"],
+["Minimize egress / cross-cloud cost","Shortcut caching (S3, GCS, S3-compatible; not ADLS)","Copying the files in"],
+["Minimize cost / operational cost","Optimize first (OPTIMIZE, V-Order, right-sized types), then scale","Scaling up as the first move"],
+["Best query performance","Physical layout: V-Order, Z-ORDER, partitioning, materialized view, caching policy","Adding compute"],
+["Near real time / within seconds / within one minute","Eventstream → Eventhouse, Activator, mirroring","Scheduled refresh or polling notebook"],
+["Low-code / analysts who know Power Query","Dataflow Gen2","Notebook"],
+["Team knows only T-SQL","Warehouse (full DML)","Lakehouse (endpoint is read-only)"],
+["Data engineers use Python","Notebook / PySpark","Dataflow Gen2"],
+["Reuse existing Airflow DAGs / minimal rewrite","Apache Airflow job","Rebuild as pipelines"],
+["Each layer must finish before the next","On success dependencies","On completion"],
+["Run simultaneously / in parallel","No dependency between activities; ForEach with Sequential off; runMultiple","Sequential chain"],
+["Retry on transient errors","Activity retry count and interval","Wrap in Until loop"],
+["Use only Fabric / no additional Azure resources","Eventstream custom endpoint, Activator, shortcuts","Event Hubs, Azure Functions, ADF"]]},
+{id:"scenario",h:"Scenario phrases",sub:"The scenario usually names the item through a source, a pattern, or a timing word.",cols:["Stem says","Points to"],rows:[
+["Azure SQL / Cosmos DB / Snowflake / PostgreSQL, minimal latency","Mirroring"],
+["On-premises SQL Server through a data gateway","Data pipeline Copy activity"],
+["Dozens of tables, changed rows only, hourly","Copy job with incremental copy"],
+["Files in S3, GCS, or ADLS that must stay in place","Shortcut (Files section unless it's Delta)"],
+["Events from Event Hubs / IoT Hub","Eventstream"],
+["Fixed, non-overlapping intervals","Tumbling window"],
+["Rolling average that updates every N minutes","Hopping window"],
+["Ends after N minutes of inactivity","Session window"],
+["Events with the same timestamp","Snapshot window"],
+["Array column, one row per element","Eventstream Expand; KQL mv-expand; PySpark explode"],
+["Latest record per key","KQL arg_max(); ROW_NUMBER() = 1"],
+["Late-arriving corrections win","arg_max(ingestion_time(), *); withWatermark in Spark"],
+["Keep full history of changes","SCD Type 2"],
+["Fact row arrives before its dimension","Inferred member"],
+["Upsert / insert or update","Delta MERGE / T-SQL MERGE"],
+["Resume a stream where it left off","checkpointLocation"],
+["Process all new files, then stop","trigger(availableNow=True)"],
+["Run when a file lands","Activator rule on OneLake or Blob events (pipeline Trigger)"],
+["Every weekday at 8:00 AM","Pipeline schedule"],
+["Notebook B depends on notebook A, in code","notebookutils.notebook.runMultiple with dependencies"],
+["Pass a value from pipeline to notebook","Base parameters + parameter cell"],
+["Return a value from notebook to pipeline","notebook.exit() → output.result.exitValue"],
+["Iterate a list from Lookup","@activity('Lookup').output.value"],
+["Every notebook needs the same library","Environment set as workspace default"],
+["Notebooks share one Spark session","High concurrency mode"],
+["Teams message when a value crosses a threshold","Activator"],
+["Read the same data with T-SQL, KQL, and Spark, written by Spark","Lakehouse"],
+["KQL data readable as Delta without a second ingestion","OneLake availability"],
+["KQL over lakehouse data, fast for recent days","Shortcut with query acceleration"],
+["Different connection per Dev/Test/Prod","Deployment rules or variable library"],
+["Warehouse schema reviewed in pull requests","Git integration + database project"]]},
+{id:"security",h:"Security and access phrases",sub:"“Least privilege” means the narrowest grant that still lets the person do every listed action. Scope first (one item or the workspace), then the permission.",cols:["Stem says","Points to"],rows:[
+["Access one item only, not the rest of the workspace","Share the item; no workspace role"],
+["Query with T-SQL, not Spark/files","Share with Read all SQL endpoint data (ReadData)"],
+["Read files through Spark/notebooks","Read all Apache Spark (ReadAll) or a OneLake security role"],
+["Build reports without reading the lakehouse","Build permission on the semantic model"],
+["View all items in the workspace","Viewer"],
+["Create and edit items, commit to Git, no access management","Contributor"],
+["Add other users","Member"],
+["Delete or update the workspace itself","Admin"],
+["Viewer must write to one folder","OneLake security role with ReadWrite"],
+["Only certain rows / folders / tables, enforced in Spark too","OneLake security role (RLS/CLS/OLS)"],
+["Rows per user in a warehouse","RLS: inline TVF WITH SCHEMABINDING + CREATE SECURITY POLICY (FILTER)"],
+["Column must error if queried","CLS: GRANT SELECT on a column list"],
+["Column visible but obfuscated","Dynamic data masking + UNMASK for exceptions"],
+["Show first N / last N characters","partial(prefix, \"padding\", suffix)"],
+["Date masked as 1900-01-01","default()"],
+["Authoritative core business data","Master data endorsement"],
+["Only approved reviewers can apply the badge","Certified"],
+["Any owner can flag it ready","Promoted"],
+["Protection travels with exported data","Sensitivity label"],
+["Who deleted / shared / changed a role","Fabric audit log in Purview"],
+["Who read files through OneLake APIs","OneLake diagnostics"],
+["Azure DevOps or GitHub calls Fabric APIs","Service principal"],
+["Fabric reaches firewalled ADLS Gen2","Workspace identity + trusted workspace access"],
+["Spark reaches private Azure SQL","Managed private endpoint"],
+["Pipeline reaches on-premises source","On-premises data gateway"],
+["Notebook needs a secret","notebookutils.credentials.getSecret(vault URL, secret name)"],
+["Delegate settings to a business unit","Domains (Fabric admin creates; domain admin manages)"]]},
+{id:"trouble",h:"Troubleshooting and optimization phrases",sub:"Symptom stems describe what someone sees; map the symptom to its cause before reading the fixes.",cols:["Stem says","Cause → fix"],rows:[
+["Thousands of small files, slow reads","Small files → OPTIMIZE (V-Order)"],
+["Remove files no longer referenced by the log","VACUUM (default 7-day retention)"],
+["Time travel to 10 days ago fails after VACUUM","Retention deleted the files"],
+["Filtered by a column with few values","Partition on it"],
+["Filtered by a column with millions of values","Z-ORDER BY it"],
+["One Spark task runs far longer than the rest","Data skew → AQE skew join or salting"],
+["Huge fact joined to a tiny dimension","Broadcast join"],
+["Driver out of memory after collect()","Don't collect; write out or limit"],
+["Same DataFrame reused in a loop","cache() / persist()"],
+["Session startup dominates short notebooks","High concurrency / starter pools"],
+["Spark error 430","Capacity cores exhausted → stop sessions or scale"],
+["Works interactively, fails in pipeline: ModuleNotFoundError","%pip only lasts the session → add to environment"],
+["Table not found after deployment","Default lakehouse still points at Dev → deployment rule"],
+["New Spark rows missing from SQL endpoint","Metadata sync lag → refresh or wait"],
+["20-second delays for report users","Interactive delay throttling → scale up/out"],
+["Background jobs rejected above a threshold","Surge protection"],
+["Which items consume the most CU","Capacity Metrics app"],
+["Which workspace an item ran in","Monitoring hub Location column"],
+["Slowest warehouse queries over 30 days","queryinsights views"],
+["First query each morning slow, later fast","Cold start; no fix needed"],
+["Thousands of singleton INSERTs slow","COPY INTO / CTAS / INSERT…SELECT"],
+["money, datetime, nvarchar fail in CREATE TABLE","Unsupported types → decimal, datetime2, varchar"],
+["Direct Lake slow with visual errors, table over SKU row limit","Guardrail exceeded → DirectQuery fallback → scale up"],
+["Direct Lake refresh fails, 10,000+ Parquet files","OPTIMIZE to compact"],
+["Direct Lake data stale after a failed refresh","Auto updates suspended → fix + on-demand refresh"],
+["Eventstream shows events, destination empty, deserialization errors","Input format mismatch"],
+["Ingestion failures that won't succeed on retry",".show ingestion failures, FailureKind Permanent"],
+["Dashboard over 14 days slow, 7-day hot cache","Extend caching policy; add materialized view"],
+["Dataflow 'insufficient permissions for staging artifacts'","First dataflow's creator inactive 90+ days"],
+["Dataflow refresh slow on 50+ GB","Fast copy; split transforms into a second query"],
+["30 shortcuts broken after a user left","Replace the shortcut connection once"]]}];
+const TRAPS=[
+{h:"Words that flip the answer",items:[
+["“must not” / “prevent”","the requirement is a negative. Re-read each option against it."],
+["“only”","Spark-only writes, T-SQL-only users, one item only. Eliminates anything broader."],
+["“each” / “per stage” / “per region”","wants something parameterized (deployment rules, variable library, RLS)."],
+["“existing”","OneLake availability without Apply to existing tables copies new data only."],
+["“ascending” in KQL","sort by / order by default to descending; asc must be explicit."],
+["“overlapping” vs “non-overlapping”","hopping vs tumbling."],
+["“Each correct answer presents part of the solution” vs “a complete solution”","combine options vs pick independent options."],
+["“You already assigned object-level permissions”","the role only needs to cover visibility, often Viewer."]]},
+{h:"Common distractor patterns",items:[
+["Right feature, wrong engine","VACUUM to compact (needs OPTIMIZE), Z-ORDER in a warehouse, indexes in a warehouse."],
+["Right idea, too much privilege","Member or Admin where Contributor works; workspace role where item sharing works."],
+["Right result, too much effort","notebook with custom code where a built-in connector, Copy job, or mirroring exists."],
+["Copies when it says don't copy","pipeline copy offered beside a shortcut."],
+["Azure resource when only Fabric is allowed","Event Hubs, Functions, ADF."],
+["Surge protection when jobs must not be rejected","it rejects background jobs by design."],
+["Masking when the column must be blocked","DDM still lets users filter; CLS blocks."],
+["SQL endpoint RLS for Spark users","only OneLake security reaches Spark."],
+["Contributor for row-level filtering","Admin, Member, and Contributor bypass OneLake security roles."]]},
+{h:"Series questions (“Does this meet the goal?”)",items:[
+["Judge each solution alone","against every stated requirement. One miss = No."],
+["More than one can be Yes","and sometimes none are."]]}];
+const esc=s=>s.replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const hl=(s,q)=>{const e=esc(s);if(!q)return e;const i=s.toLowerCase().indexOf(q);if(i<0)return e;
+ return esc(s.slice(0,i))+"<mark>"+esc(s.slice(i,i+q.length))+"</mark>"+esc(s.slice(i+q.length))};
+const total=T.reduce((n,t)=>n+t.rows.length,0)+TRAPS.reduce((n,g)=>n+g.items.length,0);
+document.getElementById("chips").innerHTML=[["how","Reading"],...T.map(t=>[t.id,t.h.split(" ")[0]]),["traps","Traps"]].map(([id,l])=>`<a href="#${id}">${l}</a>`).join("");
+function render(){const q=document.getElementById("q").value.trim().toLowerCase();let shown=0;
+ document.getElementById("tables").innerHTML=T.map(t=>{
+  const rows=t.rows.filter(r=>!q||r.join(" ").toLowerCase().includes(q));shown+=rows.length;
+  const body=rows.length?rows.map(r=>"<tr>"+r.map((c,i)=>`<td class="${i==2?"wrong hidesm":""}">${hl(c,q)}</td>`).join("")+"</tr>").join(""):`<tr><td colspan="${t.cols.length}" class="empty">No matches in this section.</td></tr>`;
+  return `<section id="${t.id}"><h2>${t.h}</h2><p class="sub">${esc(t.sub)}</p><div class="card"><table><thead><tr>${t.cols.map((c,i)=>`<th class="${i==2?"hidesm":""}">${c}</th>`).join("")}</tr></thead><tbody>${body}</tbody></table></div></section>`}).join("");
+ document.getElementById("trapcard").innerHTML=TRAPS.map(g=>{const it=g.items.filter(x=>!q||x.join(" ").toLowerCase().includes(q));shown+=it.length;
+  return it.length?`<p><b>${esc(g.h)}</b></p><ul style="margin:6px 0 14px">${it.map(x=>`<li><b>${hl(x[0],q)}</b>: ${hl(x[1],q)}</li>`).join("")}</ul>`:""}).join("")||'<p class="empty">No matches.</p>';
+ document.getElementById("count").textContent=q?`${shown} of ${total} phrases`:`${total} phrases`}
+document.getElementById("q").oninput=render;
+document.getElementById("chips").onclick=e=>{const a=e.target.closest("a");if(!a)return;e.preventDefault();document.getElementById(a.getAttribute("href").slice(1)).scrollIntoView({behavior:"smooth"})};
+render();
+</script>
+
+</body>
+</html>
