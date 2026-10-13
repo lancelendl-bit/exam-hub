@@ -10,7 +10,8 @@ An installable, offline practice app for the Microsoft Fabric certifications. Pi
   - **Monitoring map:** which tool monitors which item, and when to use it.
   - **Stem decoder:** searchable phrase → answer tables.
 - **History** page: score trend with the 700 pass line, skill-area accuracy, topics weakest first, items you keep missing, and a log of every attempt you can export as CSV. Results you finished before this existed are picked up automatically.
-- **Progress** button: export or import your progress to move it between PC and phone. Importing merges history instead of replacing it.
+- **Cloud sync:** sign in on each device (desktop app, browser, iPhone) and progress and history follow you. See [Sync setup](#sync-setup).
+- **Progress** button: sync, or export and import a file. Importing merges history instead of replacing it.
 - Answer order is shuffled with a fixed seed, so the position of the correct answer gives nothing away.
 
 ## Install it
@@ -36,6 +37,31 @@ npm run build    # production build in dist/
 1. Repo **Settings → Pages → Build and deployment → Source: GitHub Actions**.
 2. Every push to `main` runs the tests, builds the app, and deploys it.
 
+## Sync setup
+
+Sync uses a Supabase project you own. The app talks to it with plain `fetch`, so there is no SDK. The same code works with a self-hosted Supabase, only the URL changes.
+
+1. In Supabase, open **SQL Editor**, paste `supabase/schema.sql` and run it. This creates one `progress` table where each user can only see their own rows.
+2. **Authentication → Providers → Email** must be on. If **Confirm email** is on, new accounts get a confirmation email once. Turn it off if you want sign-up to sign in immediately.
+3. Copy the **Project URL** and the **anon public key** (Project Settings → API). The anon key is meant to be public. Row-level security is what protects the data.
+4. Give the app those two values, either way:
+   - **Once per device:** Progress → Cloud sync → paste them in, then create an account or sign in.
+   - **Baked into the build** (best for the phone): add repository variables `VITE_SYNC_URL` and `VITE_SYNC_KEY` under Settings → Secrets and variables → Actions → Variables. The deploy workflow passes them to the build, so every device only has to sign in. For local dev, put them in `.env.local`.
+
+How it behaves:
+- It syncs on start, when the app regains focus or comes back online, about 3 seconds after you answer something, and every two minutes while open.
+- History from all devices is merged, so no attempt is lost.
+- For an exam in progress, the most recently edited copy wins. If another device's copy replaces yours, yours is parked in `dp700-sync-undo` in local storage.
+- Resetting an exam syncs too.
+- Offline is fine. Changes stay on the device and upload later.
+- The sign-in session and server details stay on the device. They are never exported or synced.
+
+### Using a home server
+
+Self-hosted Supabase works unchanged: set the Project URL to your server. Two things to plan for:
+- The GitHub Pages site is HTTPS, so the browser blocks calls to a plain `http://` server. Your server needs a real HTTPS address.
+- Your iPhone must reach it away from home, so it needs a tunnel or VPN-reachable HTTPS address (for example Tailscale or a Cloudflare Tunnel).
+
 ## Layout
 
 | Path | What |
@@ -48,6 +74,8 @@ npm run build    # production build in dist/
 | `src/content/exam1-4.js` | Question banks. Each returns `{CASES, Q, SECTIONS}` |
 | `src/history.js` | Attempt log and the analytics behind the History page (unit-tested) |
 | `src/historyView.js` | History page: HTML and SVG charts |
+| `src/sync/` | Cloud sync: pure merge rules, Supabase provider, orchestrator, dialog UI |
+| `supabase/schema.sql` | The one table sync needs, with row-level security |
 | `src/backup.js` | Progress export / import |
 | `maps/*.html` | The three reference pages, loaded in the hub's tabs |
 | `tests/` | Vitest suites |

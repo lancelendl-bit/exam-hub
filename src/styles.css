@@ -171,6 +171,10 @@ pre,code{font-family:var(--f-mono);font-size:13px}
 .dlg{border:1px solid var(--line);border-radius:var(--r);background:var(--surface);color:var(--fg);padding:20px;width:min(520px,calc(100vw - 32px))}
 .dlg::backdrop{background:rgba(0,0,0,.45)}
 .dlg h2{margin:0;font-size:20px}
+.dlg{max-height:calc(100vh - 32px);overflow:auto}
+.dlg input:not([type=file]):not([type=checkbox]){width:100%;border:1px solid var(--line);border-radius:var(--r);background:var(--bg);color:var(--fg);padding:8px 10px}
+#syncBox{border-bottom:1px solid var(--line);padding-bottom:16px}
+#syncMark{font-weight:700;margin-left:2px}
 .dlg textarea{width:100%;font-family:var(--f-mono);font-size:12px;border:1px solid var(--line);border-radius:var(--r);background:var(--bg);color:var(--fg);padding:8px}
 body{padding-bottom:env(safe-area-inset-bottom,0px)}
 @media (max-width:640px){.views{overflow-x:auto;max-width:100%;scrollbar-width:none}.views button{white-space:nowrap}}

@@ -24,15 +24,37 @@
   <div class="spacer"></div>
   <span class="prog" id="prog"></span>
   <button class="btn small ghost" id="menu" hidden>Menu</button>
-  <button class="btn small ghost" id="backup" title="Move progress between devices">Progress</button>
+  <button class="btn small ghost" id="backup" title="Sync and back up your progress">Progress<small id="syncMark" aria-hidden="true"></small></button>
 </div></div>
 <main id="app"></main>
 <div id="frames"></div>
 
 <dialog id="backupDlg" class="dlg" aria-labelledby="bkTitle">
  <form method="dialog" class="stack">
-  <h2 id="bkTitle">Move your progress</h2>
-  <p class="meta">Progress is stored on this device. To continue on another device, export here and import there.</p>
+  <h2 id="bkTitle">Sync and back up</h2>
+  <section id="syncBox" class="stack" style="gap:10px">
+   <h3>Cloud sync</h3>
+   <p class="meta" id="syncState" role="status"></p>
+   <div id="syncCfg" class="stack" style="gap:8px" hidden>
+    <label class="meta" for="syncUrl">Project URL</label>
+    <input type="url" id="syncUrl" placeholder="https://your-project.supabase.co" autocomplete="off">
+    <label class="meta" for="syncKey">Anon (public) key</label>
+    <input type="text" id="syncKey" placeholder="eyJ..." autocomplete="off" spellcheck="false">
+    <div class="row"><button type="button" class="btn" id="syncSave">Save server</button></div>
+   </div>
+   <div id="syncAuth" class="stack" style="gap:8px" hidden>
+    <label class="meta" for="syncEmail">Email</label>
+    <input type="email" id="syncEmail" autocomplete="username" inputmode="email">
+    <label class="meta" for="syncPass">Password</label>
+    <input type="password" id="syncPass" autocomplete="current-password">
+    <div class="row"><button type="button" class="btn primary" id="syncSignIn">Sign in</button><button type="button" class="btn" id="syncSignUp">Create account</button></div>
+   </div>
+   <div id="syncUser" class="row" hidden><button type="button" class="btn" id="syncNow">Sync now</button><button type="button" class="btn ghost" id="syncOut">Sign out</button></div>
+   <p class="meta" id="syncMsg" role="status"></p>
+   <button type="button" class="btn small ghost" id="syncChange" style="align-self:flex-start" hidden>Change server</button>
+  </section>
+  <h3>Manual backup</h3>
+  <p class="meta">Prefer files? Export here and import on another device. Importing merges your history rather than replacing it.</p>
   <div class="row"><button type="button" class="btn primary" id="bkExport">Export to file</button><button type="button" class="btn" id="bkCopy">Copy as text</button></div>
   <label class="meta" for="bkText">Import: choose a file or paste exported text</label>
   <input type="file" id="bkFile" accept="application/json,.json">

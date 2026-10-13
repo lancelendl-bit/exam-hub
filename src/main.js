@@ -4,6 +4,8 @@ import {CERTS,certOf} from "./certs.js";
 import {EXAMS,examsOf} from "./exams.js";
 import {loadHistory,saveHistory,addAttempt,removeAttempt,makeAttempt,seedFromStates} from "./history.js";
 import {historyHTML,bindHistory} from "./historyView.js";
+import {createSync} from "./sync/index.js";
+import {initSyncUI} from "./sync/ui.js";
 import {initBackup} from "./backup.js";
 import {registerSW} from "virtual:pwa-register";
 registerSW({immediate:true});
@@ -24,11 +26,27 @@ let CERT=certOf(loadPref().cert).id;
 const cert=()=>certOf(CERT);
 const DOMS=()=>cert().domains;
 const drillKey=()=>CERT==="dp700"?"drill":"drill-"+CERT;
+/* Cloud sync (see src/sync). Inert until a server is configured and you sign in. */
+let syncUI=null;
+const sync=createSync({defaults:{url:import.meta.env.VITE_SYNC_URL,key:import.meta.env.VITE_SYNC_KEY},onApplied:keys=>afterSync(keys),onStatus:s=>{if(syncUI)syncUI.render(s)}});
+function afterSync(keys){
+ seedHistory();
+ if(E&&keys.includes(KEY)){
+  if(E.id==="drill")E=null; /* a drill is rebuilt from its saved state, so leave it */
+  else{const st=migrate(loadState(E.id),Q);if(st)S=st;else E=null}
+ }
+ if(VIEW==="exams"||VIEW==="hist")render()}
 function setCert(id){CERT=certOf(id).id;try{localStorage.setItem(PREF_KEY,JSON.stringify({cert:CERT,at:Date.now()}))}catch(e){}render();window.scrollTo(0,0)}
 function fresh(){return{v:2,phase:"q",sec:0,idx:0,ans:{},mark:{},checked:{},caseTab:0,filter:"all",confirm:false,plan:null,prevMissed:null,lastScore:null}}
-function loadState(id){try{const r=localStorage.getItem(PFX+id);if(r)return JSON.parse(r)}catch(e){}return null}
-function save(){if(!E)return;try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
-function clearState(id){try{localStorage.removeItem(PFX+id)}catch(e){}}
+/* A reset exam is stored as a tombstone so the reset syncs to your other devices. */
+function loadState(id){try{const r=localStorage.getItem(PFX+id);if(r){const o=JSON.parse(r);if(o&&o.deleted)return null;return o}}catch(e){}return null}
+const noStamp=(k,v)=>k==="updatedAt"?undefined:v;
+/* updatedAt only moves when the content does, so merely opening an exam can't make a stale copy win a sync. */
+function save(){if(!E)return;try{let prev=null;try{prev=JSON.parse(localStorage.getItem(KEY))}catch(e){}
+ const same=!!prev&&!prev.deleted&&JSON.stringify(prev,noStamp)===JSON.stringify(S,noStamp);
+ S.updatedAt=same?prev.updatedAt:Date.now();
+ localStorage.setItem(KEY,JSON.stringify(S));if(!same)sync.touch()}catch(e){}}
+function clearState(id){try{localStorage.setItem(PFX+id,JSON.stringify({deleted:true,updatedAt:Date.now()}));sync.touch()}catch(e){}}
 
 const $=s=>document.querySelector(s);
 const esc=t=>String(t).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
@@ -291,7 +309,7 @@ function historyPage(app){
  const h=loadHistory();
  const ctx={h,certId:CERT,certs:CERTS,titleOf,itemInfo,armed:HARM};
  app.innerHTML=historyHTML(ctx);
- bindHistory(app,{...ctx,onCert:id=>{HARM=null;setCert(id)},onArm:id=>{HARM=id;render()},onRemove:id=>{removeAttempt(h,id);saveHistory(h);HARM=null;render()}})}
+ bindHistory(app,{...ctx,onCert:id=>{HARM=null;setCert(id)},onArm:id=>{HARM=id;render()},onRemove:id=>{removeAttempt(h,id);saveHistory(h);sync.touch();HARM=null;render()}})}
 
 /* ---------- Reference views ---------- */
 const PAGES={svc:"maps/service.html",mon:"maps/monitoring.html",stem:"maps/stem.html"};
@@ -311,3 +329,5 @@ $("#brand").onclick=()=>{setView("exams");toHub()};$("#menu").onclick=toHub;
 seedHistory();
 render();
 initBackup();
+syncUI=initSyncUI(sync);
+sync.start();

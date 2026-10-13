@@ -24,7 +24,12 @@ export function restore(data, store = localStorage) {
       let cur = emptyHistory();
       try { const p = JSON.parse(store.getItem(k)); if (p && Array.isArray(p.attempts)) cur = p; } catch (e) { /* none yet */ }
       store.setItem(k, JSON.stringify(mergeHistory(cur, data[k])));
-    } else store.setItem(k, JSON.stringify(data[k]));
+    } else {
+      // An import is a deliberate act, so it counts as the newest edit when synced devices compare copies.
+      const v = data[k];
+      if (v && typeof v === "object" && !Array.isArray(v)) v.updatedAt = Date.now();
+      store.setItem(k, JSON.stringify(v));
+    }
   });
   return keys.length;
 }
