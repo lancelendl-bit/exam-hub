@@ -1,5 +1,7 @@
 /* Export / import exam progress so it can move between devices (PC ↔ iPhone).
    Everything the app saves lives in localStorage under the "dp700-hub-" prefix. */
+import { HKEY, mergeHistory, emptyHistory } from "./history.js";
+
 export const PREFIX = "dp700-hub-";
 
 export function collect(store = localStorage) {
@@ -16,7 +18,14 @@ export function restore(data, store = localStorage) {
   if (!data || typeof data !== "object" || Array.isArray(data)) throw new Error("That isn't a progress export.");
   const keys = Object.keys(data).filter((k) => k.startsWith(PREFIX));
   if (!keys.length) throw new Error("No DP-700 progress found in that export.");
-  keys.forEach((k) => store.setItem(k, JSON.stringify(data[k])));
+  keys.forEach((k) => {
+    if (k === HKEY && data[k] && Array.isArray(data[k].attempts)) {
+      // History is merged, never replaced, so importing an old export can't erase attempts made since.
+      let cur = emptyHistory();
+      try { const p = JSON.parse(store.getItem(k)); if (p && Array.isArray(p.attempts)) cur = p; } catch (e) { /* none yet */ }
+      store.setItem(k, JSON.stringify(mergeHistory(cur, data[k])));
+    } else store.setItem(k, JSON.stringify(data[k]));
+  });
   return keys.length;
 }
 

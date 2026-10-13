@@ -9,7 +9,8 @@ An installable, offline practice app for the Microsoft Fabric certifications. Pi
   - **Service map:** interactive map of Fabric items and how they connect, with flows and a glossary.
   - **Monitoring map:** which tool monitors which item, and when to use it.
   - **Stem decoder:** searchable phrase → answer tables.
-- **Progress** button: export or import your progress to move it between PC and phone.
+- **History** page: score trend with the 700 pass line, skill-area accuracy, topics weakest first, items you keep missing, and a log of every attempt you can export as CSV. Results you finished before this existed are picked up automatically.
+- **Progress** button: export or import your progress to move it between PC and phone. Importing merges history instead of replacing it.
 - Answer order is shuffled with a fixed seed, so the position of the correct answer gives nothing away.
 
 ## Install it
@@ -45,6 +46,8 @@ npm run build    # production build in dist/
 | `src/exams.js` | Exam registry: which exams exist and which cert each belongs to |
 | `src/engine/core.js` | Pure logic: seeded shuffle, answer remap, scoring (unit-tested) |
 | `src/content/exam1-4.js` | Question banks. Each returns `{CASES, Q, SECTIONS}` |
+| `src/history.js` | Attempt log and the analytics behind the History page (unit-tested) |
+| `src/historyView.js` | History page: HTML and SVG charts |
 | `src/backup.js` | Progress export / import |
 | `maps/*.html` | The three reference pages, loaded in the hub's tabs |
 | `tests/` | Vitest suites |

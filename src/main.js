@@ -2,6 +2,8 @@ import "./styles.css";
 import {rng,permute,inverse,shuffleQ,remap,maxPts,pts,answered,missedFrom,scoreOf} from "./engine/core.js";
 import {CERTS,certOf} from "./certs.js";
 import {EXAMS,examsOf} from "./exams.js";
+import {loadHistory,saveHistory,addAttempt,removeAttempt,makeAttempt,seedFromStates} from "./history.js";
+import {historyHTML,bindHistory} from "./historyView.js";
 import {initBackup} from "./backup.js";
 import {registerSW} from "virtual:pwa-register";
 registerSW({immediate:true});
@@ -64,11 +66,15 @@ function openDrill(mode){
  if(mode==="resume"&&st){if(st.v!==2){const ans={};Object.keys(st.ans||{}).forEach(j=>{const it=items[j];const q=it?examDef(it.ex).Q[it.i]:null;ans[j]=q?remap(q,st.ans[j]):st.ans[j]});st.ans=ans;st.v=2}S=st}else{S=fresh();S.items=items}
  save();render();window.scrollTo(0,0)}
 function toHub(){if(E)save();E=null;render();window.scrollTo(0,0)}
-function finish(){S.phase="results";S.finishedAt=Date.now();S.lastScore={...scoreOf(S,Q),at:Date.now(),missed:missedFrom(S,Q).length};S.confirm=false;save();render();window.scrollTo(0,0)}
+/* Every finished exam or drill is logged to the history store (see src/history.js). */
+function recordAttempt(at){try{const h=loadHistory();const drill=E.id==="drill";
+ addAttempt(h,makeAttempt({cert:drill?CERT:E.cert,exam:E.id,at,Q,ans:S.ans,ids:drill?(j=>{const it=S.items&&S.items[j];return it?[it.ex,it.i]:[E.id,j]}):null}));saveHistory(h)}catch(e){}}
+function finish(){const at=Date.now();S.phase="results";S.finishedAt=at;S.lastScore={...scoreOf(S,Q),at,missed:missedFrom(S,Q).length};S.confirm=false;recordAttempt(at);save();render();window.scrollTo(0,0)}
 
 /* ---------- Render ---------- */
 function render(){
  const app=$("#app");app.className="fade";
+ if(VIEW==="hist")return historyPage(app);
  $("#menu").hidden=!E;$("#pills").innerHTML="";$("#prog").textContent="";
  if(!E){$("#secname").textContent=cert().title;return hub(app)}
  $("#secname").textContent=E.title+(S.phase==="results"?" · Results":"");
@@ -272,20 +278,36 @@ function results(app){
  $("#home").onclick=toHub;
 }
 
+/* ---------- History ---------- */
+const titleOf=id=>id==="drill"?"Missed-item drill":((EXAMS.find(e=>e.id===id)||{}).title||id);
+function itemInfo(e,i){try{const q=examDef(e).Q[i];return q?{stem:q.stem||q.scen||"",ref:q.ref}:null}catch(x){return null}}
+/* Results saved before history existed become one attempt each. Safe to repeat. */
+function seedHistory(){try{const h=loadHistory();
+ const n=seedFromStates(h,EXAMS.map(d=>{const ex=examDef(d.id);return{cert:d.cert,exam:d.id,st:migrate(loadState(d.id),ex.Q),Q:ex.Q}}));
+ if(n)saveHistory(h)}catch(e){}}
+let HARM=null;
+function historyPage(app){
+ $("#menu").hidden=true;$("#pills").innerHTML="";$("#prog").textContent="";$("#secname").textContent="History · "+cert().code;
+ const h=loadHistory();
+ const ctx={h,certId:CERT,certs:CERTS,titleOf,itemInfo,armed:HARM};
+ app.innerHTML=historyHTML(ctx);
+ bindHistory(app,{...ctx,onCert:id=>{HARM=null;setCert(id)},onArm:id=>{HARM=id;render()},onRemove:id=>{removeAttempt(h,id);saveHistory(h);HARM=null;render()}})}
+
 /* ---------- Reference views ---------- */
 const PAGES={svc:"maps/service.html",mon:"maps/monitoring.html",stem:"maps/stem.html"};
 let VIEW="exams";
 function setView(v){VIEW=v;
  document.querySelectorAll("#views button").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.view===v)));
- const ex=v==="exams";$("#app").hidden=!ex;$("#pills").hidden=!ex;$("#prog").hidden=!ex;$("#menu").hidden=!ex||!E;
+ const ex=v==="exams",inApp=ex||v==="hist";$("#app").hidden=!inApp;$("#pills").hidden=!ex;$("#prog").hidden=!ex;$("#menu").hidden=!ex||!E;
  ["svc","mon","stem"].forEach(k=>{let f=document.getElementById("f-"+k);
   if(k===v&&!f){f=document.createElement("iframe");f.id="f-"+k;f.className="frame";f.title={svc:"Fabric service map",mon:"Fabric monitoring map",stem:"DP-700 stem decoder"}[k];
    f.src=PAGES[k];
    document.getElementById("frames").appendChild(f)}
   if(f)f.hidden=k!==v});
- $("#secname").textContent=ex?(E?E.title:cert().title):({svc:"Service map",mon:"Monitoring map",stem:"Stem decoder"}[v]);
- if(ex)render();window.scrollTo(0,0)}
+ $("#secname").textContent=ex?(E?E.title:cert().title):({hist:"History",svc:"Service map",mon:"Monitoring map",stem:"Stem decoder"}[v]);
+ if(inApp)render();window.scrollTo(0,0)}
 document.querySelectorAll("#views button").forEach(b=>b.onclick=()=>setView(b.dataset.view));
 $("#brand").onclick=()=>{setView("exams");toHub()};$("#menu").onclick=toHub;
+seedHistory();
 render();
 initBackup();
