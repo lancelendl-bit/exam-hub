@@ -7,6 +7,7 @@ import exam4Content from "./content/exam4.js";
 import dp600Exam1 from "./content/dp600/exam1.js";
 import dbxExam1 from "./content/dbx/exam1.js";
 import dp800Exam1 from "./content/dp800/exam1.js";
+import ai200Exam1 from "./content/ai200/exam1.js";
 import { CERTS } from "./certs.js";
 import { DECODERS, HAND_QUIZ, quizIdFor } from "./decoders.js";
 import { buildDecoderQuiz } from "./decoderQuiz.js";
@@ -19,6 +20,7 @@ export const EXAMS = [
   { id: "d6e1", cert: "dp600", num: "EXAM I", title: "DP-600 Mock Exam I", sub: "Full-outline question bank", desc: "Written against every skill in Microsoft's DP-600 outline: maintain a solution, prepare data, and implement and manage semantic models. Each item was checked against Microsoft Learn.", build: dp600Exam1 },
   { id: "dbe1", cert: "dbxde", num: "EXAM I", title: "Databricks DE Associate Mock Exam I", sub: "All seven exam guide sections", desc: "Single-answer multiple choice in the style of the real exam, covering all seven sections of the May 2026 exam guide. Each item was checked against the Databricks documentation.", build: dbxExam1 },
   { id: "d8e1", cert: "dp800", num: "EXAM I", title: "DP-800 Mock Exam I", sub: "Full-outline question bank", desc: "Written against the DP-800 skills outline: design and develop database solutions, secure, optimize and deploy them, and implement AI capabilities such as embeddings, vector search and RAG. Key items were checked against Microsoft Learn; the rest follow the pages cited in each item's source and weren't fetched when written.", build: dp800Exam1 },
+  { id: "a2e1", cert: "ai200", num: "EXAM I", title: "AI-200 Mock Exam I", sub: "Full-outline question bank", desc: "Written against the AI-200 skills outline: containerized solutions (Container Registry, App Service, Container Apps, AKS), AI solutions on Cosmos DB, PostgreSQL and Azure Managed Redis, Service Bus, Event Grid and Azure Functions, and Key Vault, App Configuration, OpenTelemetry and KQL. The Microsoft Learn page cited above each item was fetched and the item's claims checked against it when written; two pages (OpenTelemetry custom spans and the Functions triggers overview) were read only in part.", build: ai200Exam1 },
 ];
 
 export const examsOf = (certId) => EXAMS.filter((e) => e.cert === certId);
