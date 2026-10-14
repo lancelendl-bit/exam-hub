@@ -1,6 +1,6 @@
 import "./styles.css";
 import {rng,permute,inverse,shuffleQ,remap,maxPts,pts,answered,missedFrom,scoreOf} from "./engine/core.js";
-import {CERTS,certOf} from "./certs.js";
+import {CERTS,certOf,docsUrl} from "./certs.js";
 import {EXAMS,examsOf} from "./exams.js";
 import {loadHistory,saveHistory,addAttempt,removeAttempt,makeAttempt,seedFromStates} from "./history.js";
 import {historyHTML,bindHistory} from "./historyView.js";
@@ -25,6 +25,11 @@ function loadPref(){try{const r=JSON.parse(localStorage.getItem(PREF_KEY));if(r&
 let CERT=certOf(loadPref().cert).id;
 const cert=()=>certOf(CERT);
 const DOMS=()=>cert().domains;
+const docsLink=ref=>`<a href="${docsUrl(cert(),ref)}" target="_blank" rel="noopener">Look this up in ${cert().docs?cert().docs.label:"Microsoft Learn"} ↗</a>`;
+const MS_DAY=["Passing score is 700 of 1000. Multi-part items award partial credit, so never leave a part blank.","Budget about 15 minutes per case study and 90 seconds for other items. The real exam does not let you return to a case or a series item once you leave it.","Read the last sentence of the stem first: it names the constraint that decides the answer (least effort, least privilege, lowest cost)."];
+const examDay=()=>cert().examDay||MS_DAY;
+/* The Fabric reference maps only make sense for the Fabric certifications. */
+function applyFamily(){const f=cert().family==="fabric";document.querySelectorAll('#views [data-view="svc"],#views [data-view="mon"],#views [data-view="stem"]').forEach(b=>{b.hidden=!f})}
 const drillKey=()=>CERT==="dp700"?"drill":"drill-"+CERT;
 /* Cloud sync (see src/sync). Inert until a server is configured and you sign in. */
 let syncUI=null;
@@ -91,7 +96,7 @@ function finish(){const at=Date.now();S.phase="results";S.finishedAt=at;S.lastSc
 
 /* ---------- Render ---------- */
 function render(){
- const app=$("#app");app.className="fade";
+ const app=$("#app");app.className="fade";applyFamily();
  if(VIEW==="hist")return historyPage(app);
  $("#menu").hidden=!E;$("#pills").innerHTML="";$("#prog").textContent="";
  if(!E){$("#secname").textContent=cert().title;return hub(app)}
@@ -131,9 +136,7 @@ function hub(app){
  <p class="lede">Full simulations plus a drill of everything you've missed. Each keeps its own progress in this browser. You can move between sections freely while you work; Check answer is available on every item.</p></div>
  <div class="examgrid">${cards||`<article class="card"><h2>No exams yet</h2><p class="meta">Question banks for ${esc(cert().code)} haven't been added.</p></article>`}${drill}</div>
  <div class="card stack"><h3>On exam day</h3><ul style="margin:0;padding-left:20px;max-width:75ch">
-  <li>Passing score is 700 of 1000. Multi-part items award partial credit, so never leave a part blank.</li>
-  <li>Budget about 15 minutes per case study and 90 seconds for other items. The real exam does not let you return to a case or a series item once you leave it.</li>
-  <li>Read the last sentence of the stem first: it names the constraint that decides the answer (least effort, least privilege, lowest cost).</li>
+  ${examDay().map(t=>`<li>${t}</li>`).join("")}
  </ul></div></div>`;
  document.querySelectorAll("[data-cert]").forEach(b=>b.onclick=()=>setCert(b.dataset.cert));
  document.querySelectorAll("[data-open]").forEach(b=>b.onclick=()=>openExam(b.dataset.open,b.dataset.mode));
@@ -160,7 +163,7 @@ function question(app){
  const chk=!!S.checked[i];
  html+=body(q,i,a,chk);
  if(chk){const p=pts(q,a),m=maxPts(q);
-  html+=`<div class="explain"><div class="row"><span class="tag ${p===m?"good":p>0?"warn":"bad"}">${p===m?"Correct":p>0?"Partly correct":"Incorrect"} · ${p}/${m}</span></div><p>${q.ex}</p><a href="https://learn.microsoft.com/en-us/search/?terms=${encodeURIComponent(q.ref)}" target="_blank" rel="noopener">Look this up on Microsoft Learn ↗</a></div>`}
+  html+=`<div class="explain"><div class="row"><span class="tag ${p===m?"good":p>0?"warn":"bad"}">${p===m?"Correct":p>0?"Partly correct":"Incorrect"} · ${p}/${m}</span></div><p>${q.ex}</p>${docsLink(q.ref)}</div>`}
  html+=`<div class="nav">
   ${chk?`<button class="btn" id="retry">Try again</button>`:`<button class="btn" id="check" ${answered(q,a)?"":"disabled"}>Check answer</button>`}
   <label class="mark"><input type="checkbox" id="mk" ${S.mark[i]?"checked":""}> Mark for review</label>
@@ -288,7 +291,7 @@ function results(app){
  </div>
  ${shown.map(({q,i,p,m})=>`<article class="card stack"><div class="row"><span class="tag ${p===m?"good":p>0?"warn":"bad"}">${p}/${m}</span><span class="prog">Item ${i+1}${q.src?" · "+esc(q.src):""} · ${typeLabel(q)} · Area ${q.d}</span></div>
   ${body(q,i,S.ans[i],true)}
-  <div class="explain"><p>${q.ex}</p><a href="https://learn.microsoft.com/en-us/search/?terms=${encodeURIComponent(q.ref)}" target="_blank" rel="noopener">Look this up on Microsoft Learn ↗</a></div></article>`).join("")}
+  <div class="explain"><p>${q.ex}</p>${docsLink(q.ref)}</div></article>`).join("")}
  <div class="row">${E.id!=="drill"&&missed?`<button class="btn primary" id="againMissed">Retake with ${missed} missed first</button>`:""}${E.id!=="drill"?`<button class="btn ${missed?"":"primary"}" id="again">Retake exam</button>`:""}<button class="btn ghost" id="home">Back to menu</button></div></div>`;
  app.querySelectorAll("[data-f]").forEach(b=>b.onclick=()=>{S.filter=b.dataset.f;save();render()});
  const am=$("#againMissed");if(am)am.onclick=()=>openExam(E.id,"missed");

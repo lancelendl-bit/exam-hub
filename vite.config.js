@@ -21,9 +21,9 @@ export default defineConfig({
       injectRegister: null, // registered in src/main.js only; the map pages don't load it
       includeAssets: ["icons/*.png"],
       manifest: {
-        name: "Fabric Exam Hub",
-        short_name: "Fabric Hub",
-        description: "Practice exams, drills and reference maps for the Microsoft Fabric certifications.",
+        name: "Exam Hub",
+        short_name: "Exam Hub",
+        description: "Practice exams and drills for Microsoft Fabric and Databricks certifications.",
         start_url: "./",
         scope: "./",
         display: "standalone",

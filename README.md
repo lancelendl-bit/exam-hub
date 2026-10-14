@@ -1,8 +1,9 @@
-# Fabric Exam Hub
+# Exam Hub
 
-An installable, offline practice app for the Microsoft Fabric certifications. Pick a certification at the top of the hub. DP-700 (Fabric Data Engineer Associate) is built in.
+An installable, offline practice app for Microsoft Fabric (DP-700, DP-600) and Databricks (Data Engineer Associate) certifications. Pick a certification at the top of the hub.
 
 - **DP-700:** 4 exams. Three full mock exams (case studies, hot area, drag-and-drop, Yes/No series) and the Stem Decoder quiz. Together they have 219 items.
+- **Databricks Data Engineer Associate:** one 70-item mock exam covering all seven sections of the May 2026 exam guide, in the real exam's single-answer multiple-choice style. Each item cites the Databricks documentation it was checked against.
 - **DP-600:** one 60-item mock exam across the three skill areas, with items checked against Microsoft Learn (each item's source is in a comment above it in `src/content/dp600/`).
 - **Missed-item drill:** everything you got wrong across exams, in one run.
 - **Check answer** on every item, free section jumping, and "retake with missed first".

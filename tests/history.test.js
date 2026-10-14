@@ -164,3 +164,28 @@ describe("topic rules for DP-600", () => {
     cert.topics.filter((t) => t.id !== "other").forEach((t) => expect(counts[t.id], t.id).toBeGreaterThan(0));
   });
 });
+
+describe("topic rules for Databricks", () => {
+  it("classify every item and use every topic", () => {
+    const cert = certOf("dbxde");
+    const counts = {};
+    let total = 0;
+    EXAMS.filter((e) => e.cert === "dbxde").forEach((e) => e.build().Q.forEach((q) => {
+      total++;
+      const t = topicOf(cert, q);
+      counts[t] = (counts[t] || 0) + 1;
+    }));
+    expect(total).toBeGreaterThanOrEqual(60);
+    expect((counts.other || 0) / total).toBeLessThan(0.05);
+    cert.topics.filter((t) => t.id !== "other").forEach((t) => expect(counts[t.id], t.id).toBeGreaterThan(0));
+  });
+});
+
+describe("docs links", () => {
+  it("point each cert at its own documentation", async () => {
+    const { docsUrl } = await import("../src/certs.js");
+    expect(docsUrl(certOf("dp600"), "star schema")).toContain("learn.microsoft.com");
+    expect(docsUrl(certOf("dbxde"), "Auto Loader")).toContain("docs.databricks.com");
+    expect(docsUrl(certOf("dbxde"), "a b")).toContain("a%20b");
+  });
+});
