@@ -12,6 +12,7 @@ An installable, offline practice app for Microsoft Fabric (DP-700, DP-600) and D
   - **Monitoring map:** which tool monitors which item, and when to use it.
   - **Stem decoder:** searchable phrase → answer tables.
 - **History** page: score trend with the 700 pass line, skill-area accuracy, topics weakest first, items you keep missing, and a log of every attempt you can export as CSV. Results you finished before this existed are picked up automatically.
+- **Find a cert** page: where you stand (practice progress for every cert in the app), a list where you record the certifications you have really passed, and Azure-related certifications you could pursue next, each with its official skill areas. Suggestions adapt to what you have passed and practiced. Shortlist the ones you want.
 - **Cloud sync:** sign in on each device (desktop app, browser, iPhone) and progress and history follow you. See [Sync setup](#sync-setup).
 - **Progress** button: sync, or export and import a file. Importing merges history instead of replacing it.
 - Answer order is shuffled with a fixed seed, so the position of the correct answer gives nothing away.
@@ -78,6 +79,8 @@ Self-hosted Supabase works unchanged: set the Project URL to your server. Two th
 | `src/historyView.js` | History page: HTML and SVG charts |
 | `src/sync/` | Cloud sync: pure merge rules, Supabase provider, orchestrator, dialog UI |
 | `supabase/schema.sql` | The one table sync needs, with row-level security |
+| `src/discover.js`, `src/discoverView.js` | Find a cert page: shortlist, passed certifications, suggestions, filters |
+| `src/catalog/` | Certification facts for that page: `inapp.js` (certs with exams), `microsoft.js` (Azure-related candidates) |
 | `src/backup.js` | Progress export / import |
 | `maps/*.html` | The three reference pages, loaded in the hub's tabs |
 | `tests/` | Vitest suites |

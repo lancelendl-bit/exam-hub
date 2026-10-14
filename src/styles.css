@@ -51,6 +51,12 @@ button,select,input{font:inherit;color:inherit}
 .tip{position:absolute;transform:translate(-50%,-100%);background:var(--surface);color:var(--fg);border:1px solid var(--line);border-radius:var(--r);padding:8px 10px;font-size:13px;line-height:1.35;pointer-events:none;box-shadow:0 4px 14px rgba(0,0,0,.18);white-space:nowrap;z-index:2}
 .tip span{color:var(--muted);font-size:12px}
 .legend svg{vertical-align:-2px}
+.finder input:not([type=checkbox]),.finder select{border:1px solid var(--line);border-radius:var(--r);background:var(--bg);color:var(--fg);padding:8px 10px;max-width:100%}
+.finder input[type=search]{width:100%}
+.finder .row{flex-wrap:wrap}
+.finder details summary{cursor:pointer}
+.finder .skills{margin:6px 0 0;padding-left:18px;display:flex;flex-direction:column;gap:2px}
+.finder .fit{color:var(--accent)}
 .delta{font-size:12px;font-weight:600;margin-left:4px}
 .delta.up{color:var(--good)}
 .delta.down{color:var(--bad)}

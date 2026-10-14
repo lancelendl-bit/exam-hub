@@ -6,6 +6,9 @@ import {loadHistory,saveHistory,addAttempt,removeAttempt,makeAttempt,seedFromSta
 import {historyHTML,bindHistory} from "./historyView.js";
 import {createSync} from "./sync/index.js";
 import {initSyncUI} from "./sync/ui.js";
+import {ALL,CANDIDATES} from "./catalog/index.js";
+import {loadShortlist,saveShortlist,toggleShortlist,loadEarned,saveEarned,addEarned,removeEarned,setEarnedDate,practiceStatus,fitFor} from "./discover.js";
+import {findHTML,bindFind} from "./discoverView.js";
 import {initBackup} from "./backup.js";
 import {registerSW} from "virtual:pwa-register";
 registerSW({immediate:true});
@@ -40,7 +43,7 @@ function afterSync(keys){
   if(E.id==="drill")E=null; /* a drill is rebuilt from its saved state, so leave it */
   else{const st=migrate(loadState(E.id),Q);if(st)S=st;else E=null}
  }
- if(VIEW==="exams"||VIEW==="hist")render()}
+ if(VIEW==="exams"||VIEW==="hist"||VIEW==="find")render()}
 function setCert(id){CERT=certOf(id).id;try{localStorage.setItem(PREF_KEY,JSON.stringify({cert:CERT,at:Date.now()}))}catch(e){}render();window.scrollTo(0,0)}
 function fresh(){return{v:2,phase:"q",sec:0,idx:0,ans:{},mark:{},checked:{},caseTab:0,filter:"all",confirm:false,plan:null,prevMissed:null,lastScore:null}}
 /* A reset exam is stored as a tombstone so the reset syncs to your other devices. */
@@ -98,6 +101,7 @@ function finish(){const at=Date.now();S.phase="results";S.finishedAt=at;S.lastSc
 function render(){
  const app=$("#app");app.className="fade";applyFamily();
  if(VIEW==="hist")return historyPage(app);
+ if(VIEW==="find")return findPage(app);
  $("#menu").hidden=!E;$("#pills").innerHTML="";$("#prog").textContent="";
  if(!E){$("#secname").textContent=cert().title;return hub(app)}
  $("#secname").textContent=E.title+(S.phase==="results"?" · Results":"");
@@ -314,18 +318,40 @@ function historyPage(app){
  app.innerHTML=historyHTML(ctx);
  bindHistory(app,{...ctx,onCert:id=>{HARM=null;setCert(id)},onArm:id=>{HARM=id;render()},onRemove:id=>{removeAttempt(h,id);saveHistory(h);sync.touch();HARM=null;render()}})}
 
+/* ---------- Find a cert ---------- */
+const FIND={q:"",level:"",topic:"",platform:"",onlyShort:false};
+let FERR="";
+function nameOf(x){const e=ALL.find(c=>c.id===x.id);return e?{code:e.code,title:e.title}:{code:x.code||x.id,title:x.title||""}}
+function findPage(app){
+ $("#menu").hidden=true;$("#pills").innerHTML="";$("#prog").textContent="";$("#secname").textContent="Find a certification";
+ const earned=loadEarned(),shortlist=loadShortlist();
+ const earnedIds=new Set(earned.items.map(x=>x.id));
+ const practice=practiceStatus(loadHistory());
+ const fits=Object.fromEntries(CANDIDATES.map(e=>[e.id,fitFor(e,{earnedIds,practice,catalog:ALL})]));
+ const ctx={all:ALL,catalog:CANDIDATES,practice,earned,earnedCount:earned.items.length,earnedIds,shortlist:shortlist.ids,filters:FIND,fits,nameOf,error:FERR};
+ FERR="";
+ app.innerHTML=findHTML(ctx);
+ const done=()=>{sync.touch();render()};
+ bindFind(app,ctx,{
+  onShort:id=>{toggleShortlist(shortlist,id);saveShortlist(shortlist);done()},
+  onEarn:p=>{try{addEarned(earned,p);saveEarned(earned)}catch(e){FERR=e.message}done()},
+  onRemove:id=>{removeEarned(earned,id);saveEarned(earned);done()},
+  onDate:(id,d)=>{try{setEarnedDate(earned,id,d);saveEarned(earned)}catch(e){FERR=e.message}done()},
+  onPractice:id=>{setCert(id);setView("exams")},
+  onError:m=>{FERR=m;render()}})}
+
 /* ---------- Reference views ---------- */
 const PAGES={svc:"maps/service.html",mon:"maps/monitoring.html",stem:"maps/stem.html"};
 let VIEW="exams";
 function setView(v){VIEW=v;
  document.querySelectorAll("#views button").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.view===v)));
- const ex=v==="exams",inApp=ex||v==="hist";$("#app").hidden=!inApp;$("#pills").hidden=!ex;$("#prog").hidden=!ex;$("#menu").hidden=!ex||!E;
+ const ex=v==="exams",inApp=ex||v==="hist"||v==="find";$("#app").hidden=!inApp;$("#pills").hidden=!ex;$("#prog").hidden=!ex;$("#menu").hidden=!ex||!E;
  ["svc","mon","stem"].forEach(k=>{let f=document.getElementById("f-"+k);
   if(k===v&&!f){f=document.createElement("iframe");f.id="f-"+k;f.className="frame";f.title={svc:"Fabric service map",mon:"Fabric monitoring map",stem:"DP-700 stem decoder"}[k];
    f.src=PAGES[k];
    document.getElementById("frames").appendChild(f)}
   if(f)f.hidden=k!==v});
- $("#secname").textContent=ex?(E?E.title:cert().title):({hist:"History",svc:"Service map",mon:"Monitoring map",stem:"Stem decoder"}[v]);
+ $("#secname").textContent=ex?(E?E.title:cert().title):({find:"Find a certification",hist:"History",svc:"Service map",mon:"Monitoring map",stem:"Stem decoder"}[v]);
  if(inApp)render();window.scrollTo(0,0)}
 document.querySelectorAll("#views button").forEach(b=>b.onclick=()=>setView(b.dataset.view));
 $("#brand").onclick=()=>{setView("exams");toHub()};$("#menu").onclick=toHub;
