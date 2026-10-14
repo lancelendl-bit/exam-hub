@@ -140,7 +140,7 @@ describe("filtering", () => {
     expect(filterCatalog(CANDIDATES, { level: "Fundamentals" }).every((e) => e.level === "Fundamentals")).toBe(true);
     expect(filterCatalog(CANDIDATES, { topic: "AI and ML" }).every((e) => e.topics.includes("AI and ML"))).toBe(true);
     expect(filterCatalog(CANDIDATES, { platform: "Databricks" }).map((e) => e.id)).toContain("dp750");
-    expect(filterCatalog(CANDIDATES, { q: "vector embeddings" }).map((e) => e.id)).toContain("dp800");
+    expect(filterCatalog(CANDIDATES, { q: "unity catalog" }).map((e) => e.id)).toContain("dp750");
     expect(filterCatalog(CANDIDATES, { onlyShort: true, shortlist: ["az305"] }).map((e) => e.id)).toEqual(["az305"]);
     expect(filterCatalog(CANDIDATES, { q: "zzzz nothing" })).toEqual([]);
   });
