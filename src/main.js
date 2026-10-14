@@ -9,8 +9,11 @@ import {initSyncUI} from "./sync/ui.js";
 import {ALL,CANDIDATES} from "./catalog/index.js";
 import {loadShortlist,saveShortlist,toggleShortlist,loadEarned,saveEarned,addEarned,removeEarned,setEarnedDate,practiceStatus,fitFor} from "./discover.js";
 import {findHTML,bindFind} from "./discoverView.js";
+import {loadRequests,saveRequests,requestCerts,removeRequest,buildPrompt} from "./requests.js";
 import {DECODERS} from "./decoders.js";
 import {decoderHTML,bindDecoder} from "./decoderView.js";
+import {MAPS} from "./maps.js";
+import {mapHTML,bindMap} from "./mapView.js";
 import {loadUserDecoder,saveUserDecoder,addPhrase,updatePhrase,removePhrase,removeTable,addBulk,toText,userQuiz,signature} from "./userDecoders.js";
 import {initBackup} from "./backup.js";
 import {registerSW} from "virtual:pwa-register";
@@ -37,7 +40,7 @@ const examDay=()=>cert().examDay||MS_DAY;
 /* The Fabric reference maps only make sense for the Fabric certifications. */
 function applyMaps(){const maps=cert().maps||[];
  document.querySelectorAll("#views [data-view]").forEach(b=>{const v=b.dataset.view;
-  if(v==="svc"||v==="mon")b.hidden=!maps.includes(v);else if(v==="stem")b.hidden=false})}
+  if(v==="svc")b.hidden=!(maps.includes("svc")||MAPS[cert().id]);else if(v==="mon")b.hidden=!maps.includes("mon");else if(v==="stem")b.hidden=false})}
 const drillKey=()=>CERT==="dp700"?"drill":"drill-"+CERT;
 /* Cloud sync (see src/sync). Inert until a server is configured and you sign in. */
 let syncUI=null;
@@ -110,6 +113,7 @@ function render(){
  if(VIEW==="hist")return historyPage(app);
  if(VIEW==="find")return findPage(app);
  if(VIEW==="stem")return decoderPage(app);
+ if(VIEW==="svc"&&MAPS[cert().id])return mapPage(app);
  $("#menu").hidden=!E;$("#pills").innerHTML="";$("#prog").textContent="";
  if(!E){$("#secname").textContent=cert().title;return hub(app)}
  $("#secname").textContent=E.title+(S.phase==="results"?" · Results":"");
@@ -339,16 +343,16 @@ function historyPage(app){
 
 /* ---------- Find a cert ---------- */
 const FIND={q:"",level:"",topic:"",platform:"",onlyShort:false};
-let FERR="";
+let FERR="",FMSG="";
 function nameOf(x){const e=ALL.find(c=>c.id===x.id);return e?{code:e.code,title:e.title}:{code:x.code||x.id,title:x.title||""}}
 function findPage(app){
  $("#menu").hidden=true;$("#pills").innerHTML="";$("#prog").textContent="";$("#secname").textContent="Find a certification";
- const earned=loadEarned(),shortlist=loadShortlist();
+ const earned=loadEarned(),shortlist=loadShortlist(),requests=loadRequests(),inAppIds=new Set(CERTS.map(c=>c.id));
  const earnedIds=new Set(earned.items.map(x=>x.id));
  const practice=practiceStatus(loadHistory());
  const fits=Object.fromEntries(CANDIDATES.map(e=>[e.id,fitFor(e,{earnedIds,practice,catalog:ALL})]));
- const ctx={all:ALL,catalog:CANDIDATES,practice,earned,earnedCount:earned.items.length,earnedIds,shortlist:shortlist.ids,filters:FIND,fits,nameOf,error:FERR};
- FERR="";
+ const ctx={all:ALL,catalog:CANDIDATES,practice,earned,earnedCount:earned.items.length,earnedIds,shortlist:shortlist.ids,filters:FIND,fits,nameOf,error:FERR,requests,inAppIds,requested:new Set(requests.items.map(x=>x.id)),msg:FMSG};
+ FERR="";FMSG="";
  app.innerHTML=findHTML(ctx);
  const done=()=>{sync.touch();render()};
  bindFind(app,ctx,{
@@ -356,6 +360,14 @@ function findPage(app){
   onEarn:p=>{try{addEarned(earned,p);saveEarned(earned)}catch(e){FERR=e.message}done()},
   onRemove:id=>{removeEarned(earned,id);saveEarned(earned);done()},
   onDate:(id,d)=>{try{setEarnedDate(earned,id,d);saveEarned(earned)}catch(e){FERR=e.message}done()},
+  onRequest:async()=>{const ids=shortlist.ids.filter(id=>!inAppIds.has(id));const added=requestCerts(requests,ids,inAppIds);
+   if(added.length){saveRequests(requests);sync.touch()}
+   let copied=true;try{await navigator.clipboard.writeText(buildPrompt(ALL.filter(e=>ids.includes(e.id))))}catch(e){copied=false}
+   FMSG=(added.length?"Queued "+added.length+". ":"Already in the queue. ")+(copied?"The instruction is copied: paste it into Claude Code to start the build.":"Couldn't copy it automatically. Use Copy the instruction again below.");render()},
+  onUnrequest:id=>{removeRequest(requests,id);saveRequests(requests);done()},
+  onCopyRequest:async()=>{const entries=requests.items.filter(x=>!inAppIds.has(x.id)).map(x=>ALL.find(e=>e.id===x.id)).filter(Boolean);
+   if(!entries.length){FMSG="Nothing is waiting to be built.";return render()}
+   try{await navigator.clipboard.writeText(buildPrompt(entries));FMSG="Copied. Paste it into Claude Code."}catch(e){FMSG="Couldn't copy. Allow clipboard access and try again."}render()},
   onPractice:id=>{setCert(id);setView("exams")},
   onError:m=>{FERR=m;render()}})}
 
@@ -392,17 +404,22 @@ function decoderPage(app){
     DEC.skipped=r.skipped}catch(e){DEC.err=e.message;DEC.bulk=text}render()},
   onCopy:async()=>{try{await navigator.clipboard.writeText(toText(doc));DEC.msg="Copied your phrases."}catch(e){DEC.msg="Couldn't copy. Allow clipboard access and try again."}render()}})}
 
+/* ---------- Service map (certs whose map is data; DP-700 keeps its hand-built one below) ---------- */
+function mapPage(app){
+ $("#menu").hidden=true;$("#pills").innerHTML="";$("#prog").textContent="";$("#secname").textContent=cert().code+" · Service map";
+ const map=MAPS[cert().id];app.innerHTML=mapHTML(cert(),map);bindMap(app,cert(),map)}
+
 /* ---------- Reference views (diagrams that only some certs have) ---------- */
 const PAGES={svc:"maps/service.html",mon:"maps/monitoring.html"};
 let VIEW="exams";
 function setView(v){VIEW=v;
  document.querySelectorAll("#views button").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.view===v)));
- const ex=v==="exams",inApp=ex||v==="hist"||v==="find"||v==="stem";$("#app").hidden=!inApp;$("#pills").hidden=!ex;$("#prog").hidden=!ex;$("#menu").hidden=!ex||!E;
+ const ex=v==="exams",inApp=ex||v==="hist"||v==="find"||v==="stem"||(v==="svc"&&!!MAPS[cert().id]);$("#app").hidden=!inApp;$("#pills").hidden=!ex;$("#prog").hidden=!ex;$("#menu").hidden=!ex||!E;
  ["svc","mon"].forEach(k=>{let f=document.getElementById("f-"+k);
-  if(k===v&&!f){f=document.createElement("iframe");f.id="f-"+k;f.className="frame";f.title={svc:"Fabric service map",mon:"Fabric monitoring map"}[k];
+  if(k===v&&!f&&!(k==="svc"&&MAPS[cert().id])){f=document.createElement("iframe");f.id="f-"+k;f.className="frame";f.title={svc:"Fabric service map",mon:"Fabric monitoring map"}[k];
    f.src=PAGES[k];
    document.getElementById("frames").appendChild(f)}
-  if(f)f.hidden=k!==v});
+  if(f)f.hidden=k!==v||(k==="svc"&&!!MAPS[cert().id])});
  $("#secname").textContent=ex?(E?E.title:cert().title):({find:"Find a certification",hist:"History",svc:"Service map",mon:"Monitoring map",stem:"Stem decoder"}[v]);
  if(inApp)render();window.scrollTo(0,0)}
 document.querySelectorAll("#views button").forEach(b=>b.onclick=()=>setView(b.dataset.view));

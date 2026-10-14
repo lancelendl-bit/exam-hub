@@ -8,12 +8,12 @@ An installable, offline practice app for Microsoft Fabric (DP-700, DP-600) and D
 - **Missed-item drill:** everything you got wrong across exams, in one run.
 - **Check answer** on every item, free section jumping, and "retake with missed first".
 - **Reference tabs** (they follow the certification you have selected):
-  - **Service map** and **Monitoring map** are hand-built DP-700 diagrams, so they only show for DP-700.
+  - **Service map:** DP-700 keeps its hand-built map. Other certs get a map drawn from data (boxes in lanes, link lines, a detail panel, walk-through flows and a glossary). **Monitoring map** is a hand-built DP-700 diagram and only shows for DP-700.
   - **Stem decoder:** searchable phrase → answer tables for each cert. A **Stem Decoder Quiz** is generated from the same data.
   - **Add your own phrases** on the decoder page, one at a time or pasted in bulk (`phrase | points to | wrong pick`). They are saved with your progress and sync. A **My Phrases Quiz** is built from them and appears on the exam list.
 - **Reset…** on an exam card either resets progress (History stays) or deletes all data for that exam, including its attempts in History.
 - **History** page: score trend with the 700 pass line, skill-area accuracy, topics weakest first, items you keep missing, and a log of every attempt you can export as CSV. Results you finished before this existed are picked up automatically.
-- **Find a cert** page: where you stand (practice progress for every cert in the app), a list where you record the certifications you have really passed, and Azure-related certifications you could pursue next, each with its official skill areas. Suggestions adapt to what you have passed and practiced. Shortlist the ones you want.
+- **Find a cert** page: where you stand (practice progress for every cert in the app), a list where you record the certifications you have really passed, and Azure-related certifications you could pursue next, each with its official skill areas. Suggestions adapt to what you have passed and practiced. Shortlist the ones you want, then press **Add to Exams**. The app can't build exams by itself, so that queues them (with a status per cert) and copies an instruction. Paste it into Claude Code and the `add-cert` skill builds each one: the cert, a mock exam checked against the official docs, a stem decoder and quiz, and a service map. A queued cert shows Added once it has exams.
 - **Cloud sync:** sign in on each device (desktop app, browser, iPhone) and progress and history follow you. See [Sync setup](#sync-setup).
 - **Progress** button: sync, or export and import a file. Importing merges history instead of replacing it.
 - Answer order is shuffled with a fixed seed, so the position of the correct answer gives nothing away.
@@ -83,6 +83,9 @@ Self-hosted Supabase works unchanged: set the Project URL to your server. Two th
 | `supabase/schema.sql` | The one table sync needs, with row-level security |
 | `src/discover.js`, `src/discoverView.js` | Find a cert page: shortlist, passed certifications, suggestions, filters |
 | `src/catalog/` | Certification facts for that page: `inapp.js` (certs with exams), `microsoft.js` (Azure-related candidates) |
+| `src/maps.js`, `src/content/maps/`, `src/mapModel.js`, `src/mapView.js` | Service map data per cert, its validation, and the page that draws it |
+| `src/requests.js` | The Add to Exams queue |
+| `.claude/skills/add-cert/` | Project skill: the whole process of adding a cert (cert, exam, decoder, map) |
 | `src/decoders.js`, `src/content/decoders/` | Stem decoder data per cert. Each one gives the decoder page and a generated quiz |
 | `src/decoderQuiz.js`, `src/decoderView.js` | Builds the quiz from decoder data, and renders the decoder page |
 | `src/userDecoders.js` | Phrases you add in the app: validation, bulk paste, and the My Phrases Quiz |

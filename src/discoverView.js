@@ -47,11 +47,11 @@ function earnedHTML({ earned, nameOf, all, error }) {
 }
 
 /* ---------- the list of certifications to pursue ---------- */
-function cardHTML(e, { shortlist, earnedIds, fit, nameOf }) {
+function cardHTML(e, { shortlist, earnedIds, fit, nameOf, requested }) {
   const on = shortlist.includes(e.id), got = earnedIds.has(e.id);
   const builds = e.buildsOn.map((id) => nameOf({ id }).code);
   return `<article class="card examcard"><span class="num">${esc(e.vendor)} · ${esc(e.code)}</span><h2>${esc(e.title)}</h2>
-    <div class="status"><span class="tag">${esc(e.level)}</span>${e.topics.map((t) => `<span class="tag muted">${esc(t)}</span>`).join("")}${got ? `<span class="tag good">✓ Passed</span>` : ""}</div>
+    <div class="status"><span class="tag">${esc(e.level)}</span>${e.topics.map((t) => `<span class="tag muted">${esc(t)}</span>`).join("")}${got ? `<span class="tag good">✓ Passed</span>` : ""}${requested && requested.has(e.id) ? `<span class="tag warn">In the queue</span>` : ""}</div>
     <p class="meta">${esc(e.audience)}</p>
     ${fit.reasons.length ? `<p class="meta fit">${fit.reasons.map(esc).join(" ")}</p>` : ""}
     ${builds.length ? `<p class="meta"><b>Usually follows:</b> ${builds.map(esc).join(", ")}</p>` : ""}
@@ -70,7 +70,7 @@ function listHTML(ctx) {
   const scored = shown.map((e) => ({ e, fit: ctx.fits[e.id] }))
     .sort((a, b) => (earnedIds.has(a.e.id) - earnedIds.has(b.e.id)) || b.fit.score - a.fit.score || a.e.code.localeCompare(b.e.code));
   if (!scored.length) return `<p class="prog">Nothing matches those filters.</p>`;
-  return `<div class="examgrid">${scored.map(({ e, fit }) => cardHTML(e, { shortlist, earnedIds, fit, nameOf: ctx.nameOf })).join("")}</div>`;
+  return `<div class="examgrid">${scored.map(({ e, fit }) => cardHTML(e, { shortlist, earnedIds, fit, nameOf: ctx.nameOf, requested: ctx.requested })).join("")}</div>`;
 }
 
 function chip(label, key, value, current) {
@@ -81,13 +81,27 @@ export function findHTML(ctx) {
   const { filters, catalog, shortlist } = ctx;
   const platforms = platformsOf(catalog);
   const shortItems = catalog.filter((e) => shortlist.includes(e.id));
+  const inAppIds = ctx.inAppIds || new Set();
+  const pending = shortItems.filter((e) => !inAppIds.has(e.id));
   const shortBox = shortItems.length
-    ? `<div class="card stack"><div class="row" style="justify-content:space-between"><h3>Your shortlist (${shortItems.length})</h3><button class="btn small" id="shCopy">Copy as text</button></div>
+    ? `<div class="card stack"><div class="row" style="justify-content:space-between"><h3>Your shortlist (${shortItems.length})</h3>
+        <div class="row"><button class="btn primary" id="shAdd" ${pending.length ? "" : "disabled"}>Add to Exams</button><button class="btn small" id="shCopy">Copy as text</button></div></div>
         <p>${shortItems.map((e) => `<b>${esc(e.code)}</b> ${esc(e.title)}`).join(" · ")}</p>
-        <p class="prog" id="shMsg" role="status">Tell Claude which of these to add as exams and diagrams.</p></div>` : "";
+        <p class="prog" id="shMsg" role="status">${esc(ctx.msg || "Add to Exams queues these and copies an instruction. Paste it into Claude Code and it builds each one: the cert, a mock exam, a stem decoder and quiz, and a service map. The app can't build them by itself.")}</p></div>` : "";
+  const reqItems = (ctx.requests ? ctx.requests.items : []);
+  const reqBox = reqItems.length
+    ? `<div class="card stack"><div class="row" style="justify-content:space-between"><h3>Added to Exams queue</h3><button class="btn small" id="reqCopy">Copy the instruction again</button></div>
+        <div class="tblwrap"><table class="tbl"><thead><tr><th>Certification</th><th>Status</th><th></th></tr></thead><tbody>${reqItems.map((x) => {
+          const e = ctx.all.find((c) => c.id === x.id) || { code: x.id, title: "" };
+          const done = inAppIds.has(x.id);
+          return `<tr><td><b>${esc(e.code)}</b> ${esc(e.title)}<br><span class="prog">Requested ${esc(new Date(x.at).toLocaleDateString())}</span></td>
+            <td><span class="tag ${done ? "good" : "warn"}">${done ? "✓ Added" : "Waiting to be built"}</span></td>
+            <td><button class="btn small ghost" data-unreq="${esc(x.id)}">${done ? "Clear" : "Cancel"}</button></td></tr>`;
+        }).join("")}</tbody></table></div>
+        <p class="prog" role="status">${!shortItems.length && ctx.msg ? esc(ctx.msg) : "A cert shows Added once it has exams in the app."}</p></div>` : "";
   return `<div class="stack finder"><div class="stack" style="gap:8px"><span class="tag">Find a certification</span><h1>What to pursue next</h1>
     <p class="lede">Azure-related certifications you could add next, with their official skill areas. Record what you have passed, and the suggestions adapt. Shortlist the ones you want, then ask for them to be added to the app. The suggested order is a judgment, not a Microsoft requirement.</p></div>
-    ${standingHTML(ctx)}${earnedHTML(ctx)}${shortBox}
+    ${standingHTML(ctx)}${earnedHTML(ctx)}${shortBox}${reqBox}
     <div class="card stack"><h3>Certifications to consider</h3>
       <input type="search" id="fQ" placeholder="Search by name, code or skill" value="${esc(filters.q)}" aria-label="Search certifications">
       <div class="filters" role="group" aria-label="Level">${LEVELS.map((l) => chip(l, "level", l, filters.level)).join("")}</div>
@@ -109,6 +123,11 @@ export function bindFind(root, ctx, act) {
   root.querySelectorAll("[data-edate]").forEach((i) => (i.onchange = () => act.onDate(i.dataset.edate, i.value)));
   $("#eAdd").onclick = () => { const id = $("#eSel").value; if (!id) return act.onError("Choose a certification first."); act.onEarn({ id, passedOn: $("#eDate").value }); };
   $("#eCAdd").onclick = () => act.onEarn({ code: $("#eCode").value, title: $("#eTitle").value, passedOn: $("#eCDate").value });
+  const add = $("#shAdd");
+  if (add) add.onclick = act.onRequest;
+  root.querySelectorAll("[data-unreq]").forEach((b) => (b.onclick = () => act.onUnrequest(b.dataset.unreq)));
+  const reqCopy = $("#reqCopy");
+  if (reqCopy) reqCopy.onclick = act.onCopyRequest;
   const copy = $("#shCopy");
   if (copy) copy.onclick = async () => {
     const items = ctx.catalog.filter((e) => ctx.shortlist.includes(e.id));
