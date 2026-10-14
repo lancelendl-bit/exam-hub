@@ -12,18 +12,6 @@ export const entries=[
  buildsOn:["dbxde","dp900"],
  url:"https://learn.microsoft.com/en-us/credentials/certifications/resources/study-guides/dp-750",
  src:["https://learn.microsoft.com/en-us/credentials/certifications/resources/study-guides/dp-750"],asOf:"2026-10"},
-{id:"dp800",vendor:"Microsoft",code:"DP-800",title:"SQL AI Developer Associate",level:"Associate",topics:["Databases and SQL","AI and ML"],platforms:["Azure","SQL","Fabric"],
- audience:"For database developers who write T-SQL on SQL Server, Azure SQL or Fabric SQL databases and add AI features such as embeddings, vector search and RAG.",
- skills:[
-  {name:"Design and develop database solutions",weight:"35–40%"},
-  {name:"Secure, optimize, and deploy database solutions",weight:"35–40%"},
-  {name:"Implement AI capabilities in database solutions",weight:"25–30%"}
- ],
- format:"",
- prerequisites:"No prerequisite certification is stated; the study guide expects T-SQL and database development experience plus familiarity with CI/CD in GitHub and with AI concepts such as embeddings and vectors.",
- buildsOn:["dp900"],
- url:"https://learn.microsoft.com/en-us/credentials/certifications/resources/study-guides/dp-800",
- src:["https://learn.microsoft.com/en-us/credentials/certifications/resources/study-guides/dp-800"],asOf:"2026-10"},
 {id:"dp900",vendor:"Microsoft",code:"DP-900",title:"Azure Data Fundamentals",level:"Fundamentals",topics:["Databases and SQL","Cloud fundamentals"],platforms:["Azure"],
  audience:"An entry point for people starting to work with data in the cloud who want to show they grasp relational and non-relational data and the main Azure data services.",
  skills:[

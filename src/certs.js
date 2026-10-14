@@ -57,6 +57,31 @@ export const CERTS = [
     ],
   },
   {
+    id: "dp800",
+    code: "DP-800",
+    title: "SQL AI Developer Associate",
+    short: "SQL AI Developer",
+    docs: MS_DOCS,
+    // Skill areas and weights from the Microsoft Learn study guide (skills measured as of October 19, 2026).
+    domains: {
+      1: "Design and develop database solutions",
+      2: "Secure, optimize, and deploy database solutions",
+      3: "Implement AI capabilities in database solutions",
+    },
+    topics: [
+      { id: "vector", name: "Vector search and indexes", re: /vector|\bann\b|knn|diskann|similarity|hybrid|rrf|reciprocal|full-text|fulltext|freetext/i },
+      { id: "rag", name: "Models, embeddings and RAG", re: /embedding|external model|chunk|\brag\b|retrieval|sp_invoke|language model|prompt|foundry|openai/i },
+      { id: "sec", name: "Security and compliance", re: /secur|always encrypted|masking|row-level|\brls\b|permission|audit|passwordless|encrypt|grant|credential|managed identity/i },
+      { id: "perf", name: "Performance and concurrency", re: /isolation|deadlock|blocking|query store|execution plan|dmv|performance|snapshot|locking|concurrency/i },
+      { id: "cicd", name: "CI/CD and database projects", re: /database project|dacpac|sqlpackage|ci\/cd|pipeline|source control|branch|pull request|drift|unit test|reference data|secrets|copilot|github/i },
+      { id: "dab", name: "Data API builder and change handling", re: /data api builder|\bdab\b|graphql|\brest\b|change data capture|\bcdc\b|change tracking|azure function|logic app|application insights|log analytics|\bmcp\b/i },
+      { id: "json", name: "JSON, regex and fuzzy matching", re: /json|regexp|regular expression|edit_distance|jaro|fuzzy/i },
+      { id: "tsql", name: "T-SQL and programmability", re: /\bcte\b|window|correlated|trigger|function|stored procedure|\bview\b|error handling|try|throw|graph|match\b|apply/i },
+      { id: "objects", name: "Tables and database objects", re: /table|temporal|ledger|in-memory|memory-optimized|columnstore|sequence|partition|constraint|index|identity/i },
+      { id: "other", name: "Other", re: /./ },
+    ],
+  },
+  {
     id: "dbxde",
     code: "Databricks DE",
     title: "Databricks Certified Data Engineer Associate",
