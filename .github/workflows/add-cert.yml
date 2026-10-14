@@ -48,6 +48,12 @@ jobs:
             This is a headless run, so skip the browser checks in step 5 and rely on `npm test`, `npm run build`
             and `npm run decoder:preview`.
 
+            The run ends the moment you stop responding, and anything running in the background dies with it.
+            So never start background agents or background commands, and never end your turn to "wait" for anything.
+            Do the work yourself, one cert and one file at a time. If you use the Task tool, run each agent in the
+            foreground (run_in_background false) and use its result before you continue. Use the Read, Write, Edit,
+            Grep and Glob tools for files; use Bash only for npm, node, git and gh.
+
             Delivery, instead of step 6:
             - Work on a new branch named add-cert/<ids joined by dashes>. Never push to main.
             - Commit in logical steps, then push the branch and open a pull request to main with `gh pr create`.
@@ -60,7 +66,7 @@ jobs:
           claude_args: |
             --max-turns 400
             --model claude-sonnet-5-5
-            --allowedTools "Read,Write,Edit,Glob,Grep,WebFetch,WebSearch,Task,Bash(npm:*),Bash(node:*),Bash(npx:*),Bash(git:*),Bash(gh pr create:*),Bash(gh pr view:*),Bash(gh pr list:*),Bash(gh issue view:*),Bash(gh issue comment:*),Bash(cd:*),Bash(ls:*),Bash(cat:*),Bash(head:*),Bash(tail:*),Bash(grep:*),Bash(wc:*),Bash(mkdir:*)"
+            --allowedTools "Read,Write,Edit,Glob,Grep,WebFetch,WebSearch,Task,Bash(npm:*),Bash(node:*),Bash(npx:*),Bash(git:*),Bash(gh pr create:*),Bash(gh pr view:*),Bash(gh pr list:*),Bash(gh issue view:*),Bash(gh issue comment:*),Bash(cd:*),Bash(ls:*),Bash(cat:*),Bash(head:*),Bash(tail:*),Bash(grep:*),Bash(wc:*),Bash(mkdir:*),Bash(sed:*),Bash(mv:*),Bash(cp:*),Bash(rm:*)"
       - name: Fail if no pull request was opened
         if: always()
         env:
