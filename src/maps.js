@@ -3,5 +3,6 @@
    To add one, see .claude/skills/add-cert/SKILL.md. */
 import dp600 from "./content/maps/dp600.js";
 import dbxde from "./content/maps/dbxde.js";
+import dp800 from "./content/maps/dp800.js";
 
-export const MAPS = { dp600, dbxde };
+export const MAPS = { dp600, dbxde, dp800 };
