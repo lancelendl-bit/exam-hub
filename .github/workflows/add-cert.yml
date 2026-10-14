@@ -59,6 +59,7 @@ jobs:
           show_full_output: true
           claude_args: |
             --max-turns 400
+            --model claude-sonnet-5-5
             --allowedTools "Read,Write,Edit,Glob,Grep,WebFetch,WebSearch,Task,Bash(npm:*),Bash(node:*),Bash(npx:*),Bash(git:*),Bash(gh pr create:*),Bash(gh pr view:*),Bash(gh pr list:*),Bash(gh issue view:*),Bash(gh issue comment:*),Bash(cd:*),Bash(ls:*),Bash(cat:*),Bash(head:*),Bash(tail:*),Bash(grep:*),Bash(wc:*),Bash(mkdir:*)"
       - name: Fail if no pull request was opened
         if: always()
