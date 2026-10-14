@@ -4,8 +4,9 @@ import dp700 from "./content/decoders/dp700.js";
 import dp600 from "./content/decoders/dp600.js";
 import dbxde from "./content/decoders/dbxde.js";
 import dp800 from "./content/decoders/dp800.js";
+import ai200 from "./content/decoders/ai200.js";
 
-export const DECODERS = { dp700, dp600, dbxde, dp800 };
+export const DECODERS = { dp700, dp600, dbxde, dp800, ai200 };
 
 /* Certs whose decoder quiz is a hand-written exam in src/content (the id of that exam). */
 export const HAND_QUIZ = { dp700: "e4" };
