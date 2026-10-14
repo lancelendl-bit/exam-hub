@@ -2,8 +2,9 @@
    a generated Stem Decoder Quiz. To add one, see .claude/skills/stem-decoder/SKILL.md. */
 import dp700 from "./content/decoders/dp700.js";
 import dp600 from "./content/decoders/dp600.js";
+import dbxde from "./content/decoders/dbxde.js";
 
-export const DECODERS = { dp700, dp600 };
+export const DECODERS = { dp700, dp600, dbxde };
 
 /* Certs whose decoder quiz is a hand-written exam in src/content (the id of that exam). */
 export const HAND_QUIZ = { dp700: "e4" };

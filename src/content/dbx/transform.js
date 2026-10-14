@@ -76,7 +76,7 @@ Each row is a separate sale, so identical rows are legitimate. The silver table 
 {s:0,d:3,t:"single",ref:"spark.sql.shuffle.partitions auto optimized shuffle",
  stem:`An aggregation job runs daily on classic compute with the default shuffle partition setting of 200. Input volume varies a lot: 200 partitions are far too many on small days and too few on very large days. Which setting lets Databricks choose the partition count from the query plan and input size?`,
  opts:["Set spark.sql.shuffle.partitions to auto","Set spark.sql.shuffle.partitions to 2000","Raise spark.sql.autoBroadcastJoinThreshold","Raise spark.driver.memory"],a:0,
- ex:`The default for spark.sql.shuffle.partitions is 200, and setting it to auto enables auto-optimized shuffle, which chooses the number from the query plan and input data size. A fixed 2000 has the same problem on a different scale, and autoBroadcastJoinThreshold governs when a join side is broadcast, not the number of shuffle partitions.`},
+ ex:`On classic compute the default for spark.sql.shuffle.partitions is 200 (serverless compute already uses auto), and setting it to auto enables auto-optimized shuffle, which chooses the number from the query plan and input data size. A fixed 2000 has the same problem on a different scale, and autoBroadcastJoinThreshold governs when a join side is broadcast, not the number of shuffle partitions.`},
 
 /* src: https://docs.databricks.com/aws/en/ldp/streaming-tables */
 {s:0,d:3,t:"single",ref:"create streaming table read_files STREAM",
