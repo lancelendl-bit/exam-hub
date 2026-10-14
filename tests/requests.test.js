@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { loadRequests, saveRequests, requestCerts, removeRequest, statusOf, buildPrompt, REQUESTS_KEY } from "../src/requests.js";
+import { loadRequests, saveRequests, requestCerts, removeRequest, statusOf, buildPrompt, buildIssue, issueUrl, ISSUE_LABEL, REPO, REQUESTS_KEY } from "../src/requests.js";
 import { findHTML } from "../src/discoverView.js";
 import { ALL, CANDIDATES } from "../src/catalog/index.js";
 import { CERTS } from "../src/certs.js";
@@ -48,6 +48,27 @@ describe("the Add to Exams queue", () => {
   });
 });
 
+describe("the GitHub issue the button opens", () => {
+  const entries = [{ id: "dp750", code: "DP-750", title: "Azure Databricks Data Engineer Associate" }, { id: "az104", code: "AZ-104", title: "Azure Administrator Associate" }];
+  it("lists one cert per line as id: code (title)", () => {
+    const { title, body } = buildIssue(entries);
+    expect(title).toBe("Add to Exams: DP-750, AZ-104");
+    expect(body).toContain("- dp750: DP-750 (Azure Databricks Data Engineer Associate)\n- az104: AZ-104 (Azure Administrator Associate)");
+  });
+  it("links to the new-issue page of this repo with the workflow's label", () => {
+    const u = new URL(issueUrl(entries));
+    expect(u.origin + u.pathname).toBe("https://github.com/" + REPO + "/issues/new");
+    expect(u.searchParams.get("labels")).toBe(ISSUE_LABEL);
+    expect(u.searchParams.get("body")).toBe(buildIssue(entries).body);
+  });
+  it("uses the label the workflow listens for", async () => {
+    const fs = await import("node:fs");
+    const wf = fs.readFileSync(new URL("../.github/workflows/add-cert.yml", import.meta.url), "utf8");
+    expect(wf).toContain("github.event.label.name == '" + ISSUE_LABEL + "'");
+    expect(wf).toContain("github.repository_owner");
+  });
+});
+
 describe("the shortlist card and queue on the page", () => {
   const ctx = (extra = {}) => ({
     all: ALL, catalog: CANDIDATES, practice: practiceStatus(emptyHistory()), earned: { items: [] }, earnedCount: 0, earnedIds: new Set(),
@@ -72,6 +93,7 @@ describe("the shortlist card and queue on the page", () => {
     expect(html).toContain('data-unreq="dp750"');
     expect(html).toContain("In the queue");
     expect(html).toContain('id="reqCopy"');
+    expect(html).toContain('id="reqIssue"');
   });
   it("shows the result message under the shortlist", () => {
     expect(findHTML(ctx({ shortlist: ["dp750"], msg: "Queued 1. The instruction is copied." }))).toContain("Queued 1. The instruction is copied.");

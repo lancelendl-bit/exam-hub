@@ -45,3 +45,23 @@ export function buildPrompt(entries) {
     `a mock exam checked against the official docs, a stem decoder with its generated quiz, and a service map. ` +
     `Test everything, commit on a branch, and ask me before deploying.`;
 }
+
+/* The automated route: the button opens a prefilled GitHub issue labelled `add-cert`. The workflow in
+   .github/workflows/add-cert.yml runs Claude Code on it and opens a pull request. */
+export const REPO = "lancelendl-bit/exam-hub";
+export const ISSUE_LABEL = "add-cert";
+
+/** Title and body of the issue. The body lists one cert per line as `- <catalog id>: <code> (<title>)`. */
+export function buildIssue(entries) {
+  const codes = entries.map((e) => e.code).join(", ");
+  const lines = entries.map((e) => `- ${e.id}: ${e.code} (${e.title})`).join("\n");
+  return {
+    title: `Add to Exams: ${codes}`,
+    body: `Build these certifications into Exam Hub:\n\n${lines}\n\nCreated by the Add to Exams button. When this issue is labelled \`${ISSUE_LABEL}\`, the add-cert workflow builds each one and opens a pull request.`,
+  };
+}
+
+export function issueUrl(entries) {
+  const { title, body } = buildIssue(entries);
+  return `https://github.com/${REPO}/issues/new?labels=${ISSUE_LABEL}&title=${encodeURIComponent(title)}&body=${encodeURIComponent(body)}`;
+}
