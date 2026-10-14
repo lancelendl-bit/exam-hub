@@ -61,4 +61,20 @@ export const entries = [
     url: "https://learn.microsoft.com/en-us/credentials/certifications/resources/study-guides/dp-800",
     src: ["https://learn.microsoft.com/en-us/credentials/certifications/resources/study-guides/dp-800"], asOf: "2026-10", inApp: true,
   },
+  {
+    id: "ai200", vendor: "Microsoft", code: "AI-200", title: "Azure AI Cloud Developer Associate", level: "Associate",
+    topics: ["AI and ML"], platforms: ["Azure"],
+    audience: "For back-end developers building AI solutions on Azure with Python, containers, vector-capable data stores, messaging and Azure Functions.",
+    skills: [
+      { name: "Develop containerized solutions on Azure", weight: "20–25%" },
+      { name: "Develop AI solutions by using Azure data management services", weight: "25–30%" },
+      { name: "Connect to and consume Azure services", weight: "20–25%" },
+      { name: "Secure, monitor, and troubleshoot Azure solutions", weight: "20–25%" },
+    ],
+    format: "",
+    prerequisites: "No prerequisite certification is stated; the page expects proficiency with Azure SDKs, Azure data management, messaging and eventing, vector databases, Python and containerized apps.",
+    buildsOn: ["az900"],
+    url: "https://learn.microsoft.com/en-us/credentials/certifications/exams/ai-200/",
+    src: ["https://learn.microsoft.com/en-us/credentials/certifications/exams/ai-200/", "https://learn.microsoft.com/en-us/credentials/certifications/resources/study-guides/ai-200"], asOf: "2026-10", inApp: true,
+  },
 ];

@@ -82,6 +82,33 @@ export const CERTS = [
     ],
   },
   {
+    id: "ai200",
+    code: "AI-200",
+    title: "Azure AI Cloud Developer Associate",
+    short: "AI Cloud Developer",
+    docs: MS_DOCS,
+    // Skill areas and weights from the Microsoft Learn study guide (page updated May 2026): 1 is 20-25%, 2 is 25-30%, 3 is 20-25%, 4 is 20-25%.
+    domains: {
+      1: "Develop containerized solutions on Azure",
+      2: "Develop AI solutions by using Azure data management services",
+      3: "Connect to and consume Azure services",
+      4: "Secure, monitor, and troubleshoot Azure solutions",
+    },
+    topics: [
+      { id: "vector", name: "Vector search and embeddings", re: /vector|embedding|pgvector|hnsw|ivfflat|diskann|similarity|\brag\b|retrieval/i },
+      { id: "cosmos", name: "Azure Cosmos DB", re: /cosmos|change feed|request unit|\bru\b|consistency|indexing policy|composite index|partition key/i },
+      { id: "pg", name: "Azure Database for PostgreSQL", re: /postgres|pgbouncer|connection pool|maintenance_work_mem/i },
+      { id: "redis", name: "Azure Managed Redis", re: /redis|cache-aside|eviction|expir|invalidat/i },
+      { id: "msg", name: "Service Bus and Event Grid", re: /service bus|dead-letter|dead letter|topic|subscription|event grid|retry|filter/i },
+      { id: "func", name: "Azure Functions", re: /function app|azure functions|trigger|binding|flex consumption|premium plan/i },
+      { id: "container", name: "Containers, ACR and App Service", re: /container registry|\bacr\b|acr task|app service|image|docker/i },
+      { id: "orch", name: "Container Apps and AKS", re: /container apps|keda|revision|\baks\b|kubernetes|kubectl|manifest|\bpod/i },
+      { id: "sec", name: "Key Vault and App Configuration", re: /key vault|secret|rotation|app configuration|sentinel|managed identity|rbac/i },
+      { id: "mon", name: "OpenTelemetry and KQL", re: /opentelemetry|otel|kql|log analytics|span|trace|application insights|summarize|monitor/i },
+      { id: "other", name: "Other", re: /./ },
+    ],
+  },
+  {
     id: "dbxde",
     code: "Databricks DE",
     title: "Databricks Certified Data Engineer Associate",
