@@ -26,6 +26,7 @@ Write the bank in `src/content/<certId>/`, one file per skill area or group of a
 
 - Aim for about 60 to 70 items, split by the official weights. Use only the item types the real exam uses (Databricks is single answer only; Microsoft exams also use multi, hot area, build list, drag and drop, yes/no and series).
 - Every item has a `/* src: <official URL> */` comment above it, a `ref` search phrase, and an explanation that says why the right answer is right and why the main distractor is wrong.
+- **Say only what you verified.** The exam's `desc` in `src/exams.js` may claim "each item was checked against <docs>" only when you fetched the source page for every item. Otherwise say "key items were checked" and list the unverified topics in the pull request. A headless run that skipped fetching must not claim full verification.
 - **No length giveaway.** Run `npm run lengths -- <examId>`. The tests require the correct option to be the strict longest in 8 to 35% of four-option single items. Write distractors as detailed as the correct answer.
 - Spread correct answers across positions 0 to 3.
 - Parallel work: one agent per skill area works well. Brief each with the files to read, the shape, the fact rules, and the counts. Then read their output yourself and re-check the riskiest claims against the docs.

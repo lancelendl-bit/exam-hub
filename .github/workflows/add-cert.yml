@@ -54,6 +54,9 @@ jobs:
             foreground (run_in_background false) and use its result before you continue. Use the Read, Write, Edit,
             Grep and Glob tools for files; use Bash only for npm, node, git and gh.
 
+            Fetch the source page of every item before you finish, and fix or drop any item the page does not support.
+            The exam `desc` may say all items were checked only if you did that. Otherwise say key items were checked.
+
             Delivery, instead of step 6:
             - Work on a new branch named add-cert/<ids joined by dashes>. Never push to main.
             - Commit in logical steps, then push the branch and open a pull request to main with `gh pr create`.
