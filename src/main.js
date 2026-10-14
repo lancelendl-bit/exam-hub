@@ -9,7 +9,7 @@ import {initSyncUI} from "./sync/ui.js";
 import {ALL,CANDIDATES} from "./catalog/index.js";
 import {loadShortlist,saveShortlist,toggleShortlist,loadEarned,saveEarned,addEarned,removeEarned,setEarnedDate,practiceStatus,fitFor} from "./discover.js";
 import {findHTML,bindFind} from "./discoverView.js";
-import {loadRequests,saveRequests,requestCerts,removeRequest,buildPrompt} from "./requests.js";
+import {loadRequests,saveRequests,requestCerts,removeRequest,buildPrompt,issueUrl} from "./requests.js";
 import {DECODERS} from "./decoders.js";
 import {decoderHTML,bindDecoder} from "./decoderView.js";
 import {MAPS} from "./maps.js";
@@ -360,10 +360,14 @@ function findPage(app){
   onEarn:p=>{try{addEarned(earned,p);saveEarned(earned)}catch(e){FERR=e.message}done()},
   onRemove:id=>{removeEarned(earned,id);saveEarned(earned);done()},
   onDate:(id,d)=>{try{setEarnedDate(earned,id,d);saveEarned(earned)}catch(e){FERR=e.message}done()},
-  onRequest:async()=>{const ids=shortlist.ids.filter(id=>!inAppIds.has(id));const added=requestCerts(requests,ids,inAppIds);
+  onRequest:()=>{const ids=shortlist.ids.filter(id=>!inAppIds.has(id));const added=requestCerts(requests,ids,inAppIds);
    if(added.length){saveRequests(requests);sync.touch()}
-   let copied=true;try{await navigator.clipboard.writeText(buildPrompt(ALL.filter(e=>ids.includes(e.id))))}catch(e){copied=false}
-   FMSG=(added.length?"Queued "+added.length+". ":"Already in the queue. ")+(copied?"The instruction is copied: paste it into Claude Code to start the build.":"Couldn't copy it automatically. Use Copy the instruction again below.");render()},
+   const entries=ALL.filter(e=>ids.includes(e.id));
+   if(entries.length)window.open(issueUrl(entries),"_blank","noopener");
+   FMSG=(added.length?"Queued "+added.length+". ":"Already in the queue. ")+"A GitHub issue is open in a new tab. Press Submit new issue and the build starts; the pull request link appears on the issue.";render()},
+  onOpenIssue:()=>{const entries=requests.items.filter(x=>!inAppIds.has(x.id)).map(x=>ALL.find(e=>e.id===x.id)).filter(Boolean);
+   if(!entries.length){FMSG="Nothing is waiting to be built.";return render()}
+   window.open(issueUrl(entries),"_blank","noopener");FMSG="Opened the GitHub issue again.";render()},
   onUnrequest:id=>{removeRequest(requests,id);saveRequests(requests);done()},
   onCopyRequest:async()=>{const entries=requests.items.filter(x=>!inAppIds.has(x.id)).map(x=>ALL.find(e=>e.id===x.id)).filter(Boolean);
    if(!entries.length){FMSG="Nothing is waiting to be built.";return render()}

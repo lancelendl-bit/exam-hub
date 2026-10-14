@@ -87,10 +87,10 @@ export function findHTML(ctx) {
     ? `<div class="card stack"><div class="row" style="justify-content:space-between"><h3>Your shortlist (${shortItems.length})</h3>
         <div class="row"><button class="btn primary" id="shAdd" ${pending.length ? "" : "disabled"}>Add to Exams</button><button class="btn small" id="shCopy">Copy as text</button></div></div>
         <p>${shortItems.map((e) => `<b>${esc(e.code)}</b> ${esc(e.title)}`).join(" · ")}</p>
-        <p class="prog" id="shMsg" role="status">${esc(ctx.msg || "Add to Exams queues these and copies an instruction. Paste it into Claude Code and it builds each one: the cert, a mock exam, a stem decoder and quiz, and a service map. The app can't build them by itself.")}</p></div>` : "";
+        <p class="prog" id="shMsg" role="status">${esc(ctx.msg || "Add to Exams queues these and opens a GitHub issue. Submit it and a workflow builds each one with Claude Code (the cert, a mock exam, a stem decoder and quiz, and a service map) and opens a pull request for you to review. The app can't build them by itself.")}</p></div>` : "";
   const reqItems = (ctx.requests ? ctx.requests.items : []);
   const reqBox = reqItems.length
-    ? `<div class="card stack"><div class="row" style="justify-content:space-between"><h3>Added to Exams queue</h3><button class="btn small" id="reqCopy">Copy the instruction again</button></div>
+    ? `<div class="card stack"><div class="row" style="justify-content:space-between"><h3>Added to Exams queue</h3><div class="row"><button class="btn small" id="reqIssue">Open the GitHub issue again</button><button class="btn small" id="reqCopy">Copy as chat instruction</button></div></div>
         <div class="tblwrap"><table class="tbl"><thead><tr><th>Certification</th><th>Status</th><th></th></tr></thead><tbody>${reqItems.map((x) => {
           const e = ctx.all.find((c) => c.id === x.id) || { code: x.id, title: "" };
           const done = inAppIds.has(x.id);
@@ -126,6 +126,8 @@ export function bindFind(root, ctx, act) {
   const add = $("#shAdd");
   if (add) add.onclick = act.onRequest;
   root.querySelectorAll("[data-unreq]").forEach((b) => (b.onclick = () => act.onUnrequest(b.dataset.unreq)));
+  const reqIssue = $("#reqIssue");
+  if (reqIssue) reqIssue.onclick = act.onOpenIssue;
   const reqCopy = $("#reqCopy");
   if (reqCopy) reqCopy.onclick = act.onCopyRequest;
   const copy = $("#shCopy");
