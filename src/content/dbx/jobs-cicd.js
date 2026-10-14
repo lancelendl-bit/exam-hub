@@ -38,13 +38,13 @@ export const items=[
 /* src: https://docs.databricks.com/aws/en/jobs/if-else and https://docs.databricks.com/aws/en/jobs/task-values */
 {s:0,d:4,t:"single",ref:"Lakeflow Jobs If/else condition task task values",
  stem:`A job has a notebook task named ingest that calls dbutils.jobs.taskValues.set to store the number of loaded rows under the key row_count. A downstream task named transform should run only when row_count is greater than 0. Otherwise the run should end without running it. What should the engineer add to the job?`,
- opts:["Set the Run if dependencies of transform to At least one succeeded, so it runs after ingest","Add a retry policy to ingest so that the task repeats until it has written some rows","Add an If/else condition task testing {{tasks.ingest.values.row_count}} > 0, and run transform on its true outcome","Add a For each task that takes row_count as its input and runs transform as the nested task"],a:2,
+ opts:["Set the Run if dependencies of transform to At least one succeeded, so that it runs only after ingest has finished","Add a retry policy to ingest so that the task repeats until it has written some rows","Add an If/else condition task testing {{tasks.ingest.values.row_count}} > 0, and run transform when true","Add a For each task that takes row_count as its input and runs transform as the nested task"],a:2,
  ex:`The If/else condition task compares operands such as task value references and exposes true and false outcomes that downstream tasks can depend on. Run if conditions look only at the statuses of upstream tasks, so an ingest task that succeeded with zero rows would still trigger transform. A For each task loops over an array and does not branch.`},
 
 /* src: https://docs.databricks.com/aws/en/jobs/run-if */
 {s:0,d:4,t:"single",ref:"Lakeflow Jobs run if dependencies at least one failed",
  stem:`A job runs three independent ingestion tasks (crm, erp and web) in parallel, followed by a task named notify_oncall that sends a page. The page must be sent if at least one ingestion task fails and must not be sent when all of them succeed. Which Run if dependencies setting should notify_oncall use?`,
- opts:["All succeeded","All done","All failed","At least one failed"],a:3,
+ opts:["All succeeded, the default","All done, whatever the outcome","All failed","At least one failed"],a:3,
  ex:`The At least one failed condition runs the task when any dependency has failed, and marks it Excluded (skipped) when none has. All done would run notify_oncall after every run, including successful ones, and so send false pages. All failed would miss the case where only one or two ingestion tasks fail.`},
 
 /* src: https://docs.databricks.com/aws/en/jobs/for-each */
@@ -62,7 +62,7 @@ export const items=[
 /* src: https://docs.databricks.com/aws/en/jobs/run-if */
 {s:0,d:4,t:"single",ref:"Lakeflow Jobs run if at least one succeeded",
  stem:`A job extracts sales data from two regional systems with tasks named extract_eu and extract_us. A task named combine should run if at least one extract succeeded, so the business still receives a partial report. It must not run when both extracts fail. Which Run if dependencies setting should combine use?`,
- opts:["All succeeded","None failed","At least one succeeded","All done"],a:2,
+ opts:["All succeeded (the default)","None failed","At least one succeeded","All done, whatever the outcome"],a:2,
  ex:`At least one succeeded runs the task when any dependency succeeded, even if another failed. None failed requires that no dependency failed, so a single failed extract would prevent combine from running. All done would also run combine when both extracts fail.`},
 
 /* src: https://docs.databricks.com/aws/en/repos/git-operations-with-repos and https://docs.databricks.com/aws/en/repos/ci-cd-techniques-with-repos */

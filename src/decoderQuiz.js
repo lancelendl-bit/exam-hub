@@ -30,20 +30,31 @@ function pickDistractors(answer, preferred, pools, r, count = 3) {
   // A wrong pick the decoder names on purpose is the trap worth testing, so it only has to differ clearly from the answer.
   const clear = (c) => c && !tooSimilar(c, answer, 0.85) && !out.some((o) => tooSimilar(o, c, 0.85));
   preferred.forEach((c) => { if (out.length < count && clear(c)) out.push(c); });
-  for (const pool of pools) {
-    const order = permute(pool.length, r);
-    for (const i of order) { if (out.length >= count) break; if (ok(pool[i])) out.push(pool[i]); }
-    if (out.length >= count) break;
+
+  // Length must not give the answer away. Pick a random rank for the correct option (how many options are longer than it),
+  // then take distractors from the longer or shorter side to match, closest in length first with some randomness.
+  const longer = (c) => c.length > answer.length;
+  const rank = Math.floor(r() * (count + 1));
+  const candidates = pools.flatMap((pool, pi) => permute(pool.length, r).map((i) => ({ c: pool[i], pi })))
+    .map(({ c, pi }) => ({ c, side: longer(c), k: Math.abs(c.length - answer.length) / Math.max(c.length, answer.length, 1) + r() * 0.35 + pi * 0.4 }));
+  while (out.length < count) {
+    const needLonger = rank - out.filter(longer).length;
+    const needShorter = count - rank - out.filter((o) => !longer(o)).length;
+    const want = needLonger > 0 && needShorter > 0 ? r() < 0.5 : needLonger > 0;
+    const pick = (side) => candidates.filter((x) => x.side === side && ok(x.c)).sort((p, q) => p.k - q.k)[0];
+    const chosen = pick(want) || pick(!want);
+    if (!chosen) break;
+    out.push(chosen.c);
   }
   return out;
 }
 
 /** Builds the items. Returns {Q, sections:[{name,desc}]}; Q items carry the section index in `s`. */
-export function decoderItems(decoder, seed = "decoder") {
+export function decoderItems(decoder, seed = "decoder", { extra = [] } = {}) {
   const Q = [];
   const sections = [];
   const tableAnswers = decoder.tables.map((t) => t.rows.map((r) => r[1]));
-  const allAnswers = tableAnswers.flat();
+  const allAnswers = [...tableAnswers.flat(), ...extra]; // `extra`: answers from elsewhere that can serve as distractors
 
   decoder.tables.forEach((t, ti) => {
     sections.push({ name: t.h, desc: t.sub || "" });
@@ -53,12 +64,13 @@ export function decoderItems(decoder, seed = "decoder") {
       const r = rng(`${seed}:${t.id}:${ri}`);
       const same = tableAnswers[ti].filter((_, i) => i !== ri);
       const other = allAnswers.filter((a) => !same.includes(a) && a !== answer);
-      const distractors = pickDistractors(answer, threeCol && wrong ? [wrong] : [], [same, other], r);
+      const hasWrong = threeCol && !!wrong;
+      const distractors = pickDistractors(answer, hasWrong ? [wrong] : [], [same, other], r);
       if (distractors.length < 3) return;
-      const lead = threeCol
+      const lead = hasWrong
         ? `A question ends with this requirement: <b>${q(stem)}</b>. Which kind of answer does it point to?`
         : `A question stem contains this clue: <b>${q(stem)}</b>. What does it point to?`;
-      const trap = threeCol && wrong ? ` A typical wrong pick is ${esc(wrong)}, which can also work but loses on that requirement.` : "";
+      const trap = hasWrong ? ` A typical wrong pick is ${esc(wrong)}, which can also work but loses on that requirement.` : "";
       Q.push({
         s: ti, d: t.d || 1, t: "single", ref: `${stem} ${answer}`, stem: lead,
         opts: [answer, ...distractors], a: 0,
@@ -112,8 +124,8 @@ export function sample(Q, sectionCount, max, seed = "sample") {
 }
 
 /** The exam module a cert's decoder quiz returns: {CASES, Q, SECTIONS}. */
-export function buildDecoderQuiz(decoder, { certId = "cert", maxItems = 60 } = {}) {
-  const { Q, sections } = decoderItems(decoder, certId);
+export function buildDecoderQuiz(decoder, { certId = "cert", maxItems = 60, extra = [] } = {}) {
+  const { Q, sections } = decoderItems(decoder, certId, { extra });
   const picked = sample(Q, sections.length, maxItems, certId);
   // Keep sections in order and renumber them so empty ones disappear.
   const used = [...new Set(picked.map((q) => q.s))].sort((a, b) => a - b);

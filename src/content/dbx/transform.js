@@ -11,7 +11,7 @@ Some orders that are still being processed have a NULL <b>status</b> and must be
 /* src: https://docs.databricks.com/aws/en/pyspark/reference/classes/dataframe/dropDuplicates */
 {s:0,d:3,t:"single",ref:"deduplicate keep latest record row_number window",
  stem:`The table <b>bronze.customer_updates</b> holds several rows per <b>customer_id</b>, each with an <b>updated_at</b> timestamp. A data engineer must write a silver table that keeps exactly one row per customer, the one with the latest <b>updated_at</b>. Which approach does this reliably?`,
- opts:["df.dropDuplicates([\"customer_id\"])","df.orderBy(\"updated_at\", ascending=False).dropDuplicates([\"customer_id\"])","df.distinct()","Number the rows with row_number() over a window partitioned by customer_id and ordered by updated_at descending, then keep rows numbered 1"],a:3,
+ opts:["df.dropDuplicates([\"customer_id\"]), which keeps one row per customer","df.orderBy(\"updated_at\", ascending=False).dropDuplicates([\"customer_id\"])","df.distinct(), which removes rows that repeat in every column","Use row_number() per customer_id ordered by updated_at descending and keep row 1"],a:3,
  ex:`dropDuplicates only takes a subset of columns to compare. It has no parameter for choosing which duplicate survives, and the docs do not define it, so an earlier orderBy cannot be relied on. distinct() removes only rows that are identical in every column, so versions of a customer that differ in updated_at all remain.`},
 
 /* src: https://docs.databricks.com/aws/en/pyspark/reference/classes/dataframe/unionByName */

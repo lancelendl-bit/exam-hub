@@ -11,6 +11,7 @@ import {loadShortlist,saveShortlist,toggleShortlist,loadEarned,saveEarned,addEar
 import {findHTML,bindFind} from "./discoverView.js";
 import {DECODERS} from "./decoders.js";
 import {decoderHTML,bindDecoder} from "./decoderView.js";
+import {loadUserDecoder,saveUserDecoder,addPhrase,updatePhrase,removePhrase,removeTable,addBulk,toText,userQuiz,signature} from "./userDecoders.js";
 import {initBackup} from "./backup.js";
 import {registerSW} from "virtual:pwa-register";
 registerSW({immediate:true});
@@ -18,7 +19,7 @@ registerSW({immediate:true});
 /* ---------- Exam registry: see src/exams.js and src/certs.js ---------- */
 const built={};
 /* seeded shuffle so answer positions carry no signal; stable across reloads */
-function examDef(id){const d=EXAMS.find(e=>e.id===id);if(!built[id]){const c=d.build();c.SECTIONS=c.SECTIONS.map(s=>({...s,desc:s.desc.replace(/ You can review answers before leaving the case, but you can't return afterward\./,"").replace(/ You can review and change answers until you leave the section\./,"").replace(/ After you answer an item and select Next, you can't return to it\./,"")}));c.Q=c.Q.map((q,i)=>shuffleQ({...q,opts:q.opts&&q.opts.slice(),sel:q.sel&&q.sel.map(x=>x.slice()),pool:q.pool&&q.pool.slice(),a:Array.isArray(q.a)?q.a.slice():q.a},id+"#"+i));built[id]=c}return {...d,...built[id]}}
+function examDef(id){const d=EXAMS.find(e=>e.id===id);const ver=d.version?d.version():"";if(!built[id]||built[id]._v!==ver){const c=d.build();c.SECTIONS=c.SECTIONS.map(s=>({...s,desc:s.desc.replace(/ You can review answers before leaving the case, but you can't return afterward\./,"").replace(/ You can review and change answers until you leave the section\./,"").replace(/ After you answer an item and select Next, you can't return to it\./,"")}));c.Q=c.Q.map((q,i)=>shuffleQ({...q,opts:q.opts&&q.opts.slice(),sel:q.sel&&q.sel.map(x=>x.slice()),pool:q.pool&&q.pool.slice(),a:Array.isArray(q.a)?q.a.slice():q.a},id+"#"+i));c._v=ver;built[id]=c}return {...d,...built[id],sig:ver}}
 function migrate(st,Qarr){if(!st||st.v===2)return st;const ans={};Object.keys(st.ans||{}).forEach(k=>{const q=Qarr[k];ans[k]=q?remap(q,st.ans[k]):st.ans[k]});st.ans=ans;st.v=2;return st}
 
 /* ---------- State ---------- */
@@ -34,15 +35,15 @@ const docsLink=ref=>`<a href="${docsUrl(cert(),ref)}" target="_blank" rel="noope
 const MS_DAY=["Passing score is 700 of 1000. Multi-part items award partial credit, so never leave a part blank.","Budget about 15 minutes per case study and 90 seconds for other items. The real exam does not let you return to a case or a series item once you leave it.","Read the last sentence of the stem first: it names the constraint that decides the answer (least effort, least privilege, lowest cost)."];
 const examDay=()=>cert().examDay||MS_DAY;
 /* The Fabric reference maps only make sense for the Fabric certifications. */
-function applyMaps(){const maps=cert().maps||[],hasDecoder=!!DECODERS[cert().id];
+function applyMaps(){const maps=cert().maps||[];
  document.querySelectorAll("#views [data-view]").forEach(b=>{const v=b.dataset.view;
-  if(v==="svc"||v==="mon")b.hidden=!maps.includes(v);else if(v==="stem")b.hidden=!hasDecoder})}
+  if(v==="svc"||v==="mon")b.hidden=!maps.includes(v);else if(v==="stem")b.hidden=false})}
 const drillKey=()=>CERT==="dp700"?"drill":"drill-"+CERT;
 /* Cloud sync (see src/sync). Inert until a server is configured and you sign in. */
 let syncUI=null;
 const sync=createSync({defaults:{url:import.meta.env.VITE_SYNC_URL,key:import.meta.env.VITE_SYNC_KEY},onApplied:keys=>afterSync(keys),onStatus:s=>{if(syncUI)syncUI.render(s)}});
 function afterSync(keys){
- seedHistory();
+ syncUserExams();seedHistory();
  if(E&&keys.includes(KEY)){
   if(E.id==="drill")E=null; /* a drill is rebuilt from its saved state, so leave it */
   else{const st=migrate(loadState(E.id),Q);if(st)S=st;else E=null}
@@ -76,18 +77,20 @@ function planFor(missed){
   ...SECTIONS.map((s,k)=>({...s,items:rest(k)})).filter(x=>x.items.length)]}
 
 /* ---------- Open / start ---------- */
+/* Saved progress for an exam whose questions can change (sig) only counts if it was made against the current questions. */
+function stateFor(id,ex){const st=migrate(loadState(id),ex.Q);return(ex.sig&&st&&st.sig!==ex.sig)?null:st}
 function openExam(id,mode){
  E=examDef(id);Q=E.Q;CASES=E.CASES;SECTIONS=E.SECTIONS;KEY=PFX+id;
- const st=migrate(loadState(id),Q);
+ const st=stateFor(id,E);
  if(mode==="resume"&&st){S=st}
  else if(mode==="results"&&st){S=st;S.phase="results"}
- else{const missed=mode==="missed"&&st?missedFrom(st,Q):[];S=fresh();if(missed.length){S.plan=planFor(missed);S.prevMissed=missed}}
+ else{const missed=mode==="missed"&&st?missedFrom(st,Q):[];S=fresh();S.sig=E.sig;if(missed.length){S.plan=planFor(missed);S.prevMissed=missed}}
  save();render();window.scrollTo(0,0)}
 function openDrill(mode){
  const st=loadState(drillKey());
  let items;
  if(mode==="resume"&&st&&st.items){items=st.items}
- else{items=[];examsOf(CERT).forEach(d=>{const ex=examDef(d.id);const es=migrate(loadState(d.id),ex.Q);missedFrom(es,ex.Q).forEach(i=>items.push({ex:d.id,i}))})}
+ else{items=[];examsOf(CERT).forEach(d=>{const ex=examDef(d.id);const es=stateFor(d.id,ex);missedFrom(es,ex.Q).forEach(i=>items.push({ex:d.id,i}))})}
  if(!items.length)return;
  const cases=[],qs=[];const coff={};
  items.forEach(it=>{const ex=examDef(it.ex);const q={...ex.Q[it.i]};if(q.c!=null){const key=it.ex+":"+q.c;if(coff[key]==null){coff[key]=cases.length;cases.push(ex.CASES[q.c])}q.c=coff[key]}q.s=0;q.src=`${ex.title} · item ${it.i+1}`;qs.push(q)});
@@ -130,7 +133,7 @@ function deleteExamData(id){clearState(sid(id));try{const h=loadHistory();if(rem
 function hub(app){
  const hist=loadHistory(),hasHist=id=>hist.attempts.some(a=>a.exam===id&&a.cert===CERT);
  const cards=examsOf(CERT).map(d=>{
-  const ex=examDef(d.id);const st=migrate(loadState(d.id),ex.Q);
+  const ex=examDef(d.id);const st=stateFor(d.id,ex);
   const n=ex.Q.length;const answeredN=st?Object.keys(st.ans).filter(i=>answered(ex.Q[i],st.ans[i])).length:0;
   const missed=st?missedFrom(st,ex.Q).length:0;
   let status,btns;
@@ -143,7 +146,7 @@ function hub(app){
   <p class="meta">${n} items · ${ex.SECTIONS.length} sections: ${ex.SECTIONS.map(s=>esc(s.name)).join(", ")}</p>
   <div class="status">${status}</div><div class="btns">${btns}${dataBtns(d.id,st||hasHist(d.id))}</div></article>`}).join("");
  const drillSt=loadState(drillKey());
- let drillCount=0;examsOf(CERT).forEach(d=>{const es=loadState(d.id);if(es)drillCount+=missedFrom(es,examDef(d.id).Q).length});
+ let drillCount=0;examsOf(CERT).forEach(d=>{const ex=examDef(d.id),es=stateFor(d.id,ex);if(es)drillCount+=missedFrom(es,ex.Q).length});
  const drill=`<article class="card examcard drill"><span class="num">DRILL</span><h2>Missed-item drill</h2><p class="meta">Every item you got wrong or partly wrong on your most recent attempt of each exam, in one short run. Rebuilt each time you start it.</p>
   <div class="status">${drillCount?`<span class="tag warn">${drillCount} items waiting</span>`:`<span class="tag muted">Nothing missed yet</span>`}${drillSt&&drillSt.phase!=="results"&&drillSt.items?`<span class="prog">A drill is in progress</span>`:""}</div>
   <div class="btns">${drillSt&&drillSt.phase!=="results"&&drillSt.items?`<button class="btn primary" data-drill="resume">Resume drill</button>`:""}<button class="btn ${drillSt&&drillSt.phase!=="results"&&drillSt.items?"":"primary"}" data-drill="new" ${drillCount?"":"disabled"}>Start drill</button>${dataBtns("drill",drillSt||hasHist("drill"))}</div></article>`;
@@ -324,7 +327,7 @@ const titleOf=id=>id==="drill"?"Missed-item drill":((EXAMS.find(e=>e.id===id)||{
 function itemInfo(e,i){try{const q=examDef(e).Q[i];return q?{stem:q.stem||q.scen||"",ref:q.ref}:null}catch(x){return null}}
 /* Results saved before history existed become one attempt each. Safe to repeat. */
 function seedHistory(){try{const h=loadHistory();
- const n=seedFromStates(h,EXAMS.map(d=>{const ex=examDef(d.id);return{cert:d.cert,exam:d.id,st:migrate(loadState(d.id),ex.Q),Q:ex.Q}}));
+ const n=seedFromStates(h,EXAMS.map(d=>{const ex=examDef(d.id);return{cert:d.cert,exam:d.id,st:stateFor(d.id,ex),Q:ex.Q}}));
  if(n)saveHistory(h)}catch(e){}}
 let HARM=null;
 function historyPage(app){
@@ -357,12 +360,37 @@ function findPage(app){
   onError:m=>{FERR=m;render()}})}
 
 /* ---------- Stem decoder ---------- */
+let DEC={editing:null,msg:"",err:"",skipped:[],draft:null,bulk:""};
+/* A "My Phrases Quiz" exists for a cert once it has phrases to ask about. It is rebuilt from them, so it is registered here rather than in src/exams.js. */
+function syncUserExams(){
+ CERTS.forEach(c=>{const id=c.id+"-mine",i=EXAMS.findIndex(e=>e.id===id),doc=loadUserDecoder(c.id);
+  if(!userQuiz(doc,DECODERS[c.id],c.id)){if(i>=0){EXAMS.splice(i,1);delete built[id]}return}
+  const entry={id,cert:c.id,num:"QUIZ",title:c.code+" My Phrases Quiz",sub:"Built from phrases you added",
+   desc:"Questions made from the stem decoder phrases you added yourself. It is rebuilt whenever you add, edit or delete a phrase, so progress on it starts over when the phrases change.",
+   build:()=>userQuiz(loadUserDecoder(c.id),DECODERS[c.id],c.id),version:()=>signature(loadUserDecoder(c.id))};
+  if(i>=0)EXAMS[i]=entry;else EXAMS.push(entry)})}
 function decoderPage(app){
  $("#menu").hidden=true;$("#pills").innerHTML="";$("#prog").textContent="";$("#secname").textContent=cert().code+" · Stem decoder";
- const d=DECODERS[cert().id];
- if(!d){app.innerHTML=`<div class="card stack"><h2>No stem decoder for ${esc(cert().code)} yet</h2><p class="meta">Decoders are generated per exam. See the stem-decoder skill in this project.</p></div>`;return}
- app.innerHTML=decoderHTML(cert(),d);
- bindDecoder(app,d,{onQuiz:()=>setView("exams")})}
+ const c=cert(),d=DECODERS[c.id]||null,doc=loadUserDecoder(c.id);
+ const ctx={user:doc,editing:DEC.editing,msg:DEC.msg,err:DEC.err,skipped:DEC.skipped,draft:DEC.draft,bulk:DEC.bulk,domains:DOMS(),userQuizOk:!!userQuiz(doc,d,c.id),quizSkipped:(userQuiz(doc,d,c.id)||{}).skipped||0};
+ DEC.msg="";DEC.err="";DEC.skipped=[];DEC.draft=null;DEC.bulk="";
+ app.innerHTML=decoderHTML(c,d,ctx);
+ const persist=()=>{saveUserDecoder(c.id,doc);syncUserExams();sync.touch()};
+ const commit=(fn,msg,draft)=>{try{fn();persist();DEC.msg=msg;DEC.editing=null}catch(e){DEC.err=e.message;DEC.draft=draft||null}render()};
+ bindDecoder(app,d,ctx,{
+  onQuiz:()=>setView("exams"),
+  onAdd:(target,f)=>commit(()=>addPhrase(doc,d,target,f,DOMS()),"Added. It is in the table below.",f),
+  onSave:(e,f)=>commit(()=>updatePhrase(doc,d,e.tableId,e.index,f),"Saved.",f),
+  onEdit:(tableId,index)=>{DEC.editing={tableId,index};render()},
+  onCancel:()=>{DEC.editing=null;render()},
+  onDelete:(tableId,index)=>commit(()=>removePhrase(doc,tableId,index),"Deleted."),
+  onDeleteTable:tableId=>commit(()=>removeTable(doc,tableId),"Table deleted."),
+  onBulk:(target,text)=>{try{const r=addBulk(doc,d,target,text,DOMS());
+    if(r.added)persist();else DEC.bulk=text;
+    DEC.msg=r.added?"Added "+r.added+" phrase"+(r.added===1?"":"s")+"."+(r.skipped.length?" Skipped "+r.skipped.length+":":""):(r.skipped.length?"Nothing was added:":"");
+    if(!r.added&&!r.skipped.length)DEC.err="Paste at least one line like: phrase | points to";
+    DEC.skipped=r.skipped}catch(e){DEC.err=e.message;DEC.bulk=text}render()},
+  onCopy:async()=>{try{await navigator.clipboard.writeText(toText(doc));DEC.msg="Copied your phrases."}catch(e){DEC.msg="Couldn't copy. Allow clipboard access and try again."}render()}})}
 
 /* ---------- Reference views (diagrams that only some certs have) ---------- */
 const PAGES={svc:"maps/service.html",mon:"maps/monitoring.html"};
@@ -379,6 +407,7 @@ function setView(v){VIEW=v;
  if(inApp)render();window.scrollTo(0,0)}
 document.querySelectorAll("#views button").forEach(b=>b.onclick=()=>setView(b.dataset.view));
 $("#brand").onclick=()=>{setView("exams");toHub()};$("#menu").onclick=toHub;
+syncUserExams();
 seedHistory();
 render();
 initBackup();

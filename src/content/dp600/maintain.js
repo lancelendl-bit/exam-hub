@@ -32,7 +32,7 @@ export const items=[
 /* src: https://learn.microsoft.com/en-us/power-bi/developer/projects/projects-overview */
 {s:0,d:1,t:"single",ref:"Power BI Desktop project pbip TMDL PBIR Git",
  stem:`Four analysts at Litware co-author a Power BI report and its semantic model in Power BI Desktop. The work is saved in a single PBIX file, and merge conflicts keep occurring in Git. You need to enable meaningful diffs and merges of report and model changes in pull requests. What should you do?`,
- opts:["Save the report as a .pbit template and commit the template","Export a .pbids file for each analyst and commit it","Commit the PBIX file by using Git LFS","Save the work as a Power BI Project (.pbip) and commit the project folders"],a:3,
+ opts:["Save the report as a .pbit template and commit the template","Export a .pbids file for each analyst and commit it to the repository","Commit the PBIX file by using Git LFS so that every version is stored","Save the work as a Power BI Project (.pbip) and commit the project folders"],a:3,
  ex:`A Power BI Project saves the report and the semantic model as separate folders of plain-text files (PBIR and TMDL), which is what makes diffs and merges practical. A .pbit is a template for starting new reports, not a source-control format, and a .pbids file holds only a single data source connection.`},
 
 /* src: https://learn.microsoft.com/en-us/fabric/governance/service-security-sensitivity-label-downstream-inheritance */
@@ -56,7 +56,7 @@ export const items=[
 /* src: https://learn.microsoft.com/en-us/fabric/onelake/security/get-started-security */
 {s:0,d:1,t:"multi",n:2,ref:"OneLake security roles folder read lakehouse Viewer",
  stem:`You have a Fabric lakehouse named LH1 with the folders Files/Finance and Files/HR. The Entra group Analysts must read only Files/Finance from Spark notebooks and must not be able to change any item. Which two actions should you perform? Each correct answer presents part of the solution.`,
- opts:["Assign Analysts the Contributor role in the workspace","Assign Analysts the Viewer role in the workspace","Share LH1 with Analysts and select Read all with Apache Spark","Create a OneLake security role on LH1 that grants Read on Files/Finance and add Analysts as members","Create an RLS role in a semantic model that uses LH1"],a:[1,3],
+ opts:["Assign Analysts the Contributor role in the workspace so that they can run Spark notebooks","Assign Analysts the Viewer role in the workspace","Share LH1 with Analysts and select Read all with Apache Spark","Create a OneLake security role that grants Analysts Read on Files/Finance","Create an RLS role in a semantic model that uses LH1 and add Analysts to it"],a:[1,3],
  ex:`The Viewer role prevents item changes, and a OneLake security role then grants Read on just the Files/Finance folder. Read all with Apache Spark exposes the whole lakehouse through the default reader role, and Contributor allows writes.`},
 
 /* src: https://learn.microsoft.com/en-us/fabric/cicd/deployment-pipelines/understand-the-deployment-process */

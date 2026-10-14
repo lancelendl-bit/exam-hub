@@ -36,7 +36,7 @@ Which approach meets the requirement?`,
  stem:`A job cluster for a nightly pipeline fails to start after a teammate changed the path of a cluster-scoped init script. The compute event log shows the termination code INIT_SCRIPT_FAILURE.
 
 What should the data engineer do first?`,
- opts:["Request a vCPU quota increase for the cloud account","Allow inbound traffic from the Databricks control plane in the security group","Read the init script logs and correct the script path, storage permissions or failing command","Retry later, because the cloud provider launch failure is transient"],a:2,
+ opts:["Request a vCPU quota increase for the cloud account, then restart the cluster","Allow inbound traffic from the Databricks control plane in the security group","Read the init script logs and correct the script path, storage permissions or failing command","Retry later, because the cloud provider launch failure is transient and clears on its own"],a:2,
  ex:`INIT_SCRIPT_FAILURE means a cluster-scoped init script could not be fetched or exited with an error, so the cluster failed to launch; the fix is whatever the init script logs identify, such as a wrong path or missing permissions. A quota increase is the answer to AWS_RESOURCE_QUOTA_EXCEEDED, opening control-plane traffic fixes INSTANCE_UNREACHABLE, and retrying fits transient CLOUD_PROVIDER_LAUNCH_FAILURE errors.`},
 
 /* src: https://docs.databricks.com/aws/en/libraries/notebooks-python-libraries */
@@ -52,7 +52,7 @@ What should the engineer do?`,
  stem:`A nightly job fails with "Driver is temporarily unavailable". The event log says the driver was up but not responsive, likely due to garbage collection. The notebook runs rows = df.collect() on a 90-million-row DataFrame and then loops over the rows in Python.
 
 What is the best fix?`,
- opts:["Keep the processing in Spark, for example by aggregating or writing with DataFrame operations, instead of collecting all rows to the driver","Add 20 more worker nodes to the cluster","Raise spark.sql.shuffle.partitions to 2000","Turn on autoscaling for the workers"],a:0,
+ opts:["Use DataFrame operations in Spark instead of collecting all rows to the driver","Add 20 more worker nodes so that the cluster has more total memory for the collected rows","Raise spark.sql.shuffle.partitions to 2000 so that the collected data is split into smaller tasks","Turn on autoscaling for the workers so that the cluster grows while the notebook loops over the rows"],a:0,
  ex:`Collecting a very large result into the driver causes driver out-of-memory and garbage-collection pressure, and the recommended remedy is to keep data distributed and use Spark operations, or give the driver more memory if collect is unavoidable. Adding or autoscaling workers does not add driver capacity, and shuffle partitions do not change how much data is pulled to the driver.`},
 
 /* src: https://docs.databricks.com/aws/en/tables/external */
@@ -89,8 +89,8 @@ Which statement converts the table in place?`,
 Members of the group analysts have no other privileges on prod, yet SELECT * FROM prod.sales.orders fails with a permission error.
 
 Which additional statements fix this with the fewest privileges?`,
- opts:["GRANT ALL PRIVILEGES ON TABLE prod.sales.orders TO analysts;","GRANT MODIFY ON TABLE prod.sales.orders TO analysts;","GRANT USE CATALOG ON CATALOG prod TO analysts; GRANT USE SCHEMA ON SCHEMA prod.sales TO analysts;","GRANT CREATE TABLE ON SCHEMA prod.sales TO analysts;"],a:2,
- ex:`To read a table a principal needs USE CATALOG on the catalog, USE SCHEMA on the schema and SELECT on the table, and SELECT alone is not sufficient. The other options add data-changing or object-creation privileges but still leave out the two usage privileges.`},
+ opts:["GRANT ALL PRIVILEGES ON TABLE prod.sales.orders TO analysts; GRANT USE SCHEMA ON SCHEMA prod.sales TO analysts;","GRANT MODIFY ON TABLE prod.sales.orders TO analysts; GRANT USE SCHEMA ON SCHEMA prod.sales TO analysts;","GRANT USE CATALOG ON CATALOG prod TO analysts; GRANT USE SCHEMA ON SCHEMA prod.sales TO analysts;","GRANT CREATE TABLE ON SCHEMA prod.sales TO analysts;"],a:2,
+ ex:`To read a table a principal needs USE CATALOG on the catalog, USE SCHEMA on the schema and SELECT on the table, and SELECT alone is not sufficient. The other options add table-level, data-changing or object-creation privileges (two of them also grant USE SCHEMA) but none grants USE CATALOG on the catalog, so access still fails.`},
 
 /* src: https://docs.databricks.com/aws/en/data-governance/unity-catalog/access-control/permissions-concepts */
 {s:0,d:7,t:"single",ref:"Unity Catalog privilege inheritance grant on schema",
@@ -107,7 +107,7 @@ Which statement meets the requirement with the least ongoing effort?`,
 Security wants contractors to keep reading all tables except prod.hr.salaries.
 
 Which approach works in Unity Catalog?`,
- opts:["DENY SELECT ON TABLE prod.hr.salaries TO contractors;","REVOKE SELECT ON SCHEMA prod.hr FROM contractors; then grant SELECT on each table they may read","REVOKE SELECT ON TABLE prod.hr.salaries FROM contractors;","REVOKE USE SCHEMA ON SCHEMA prod.hr FROM contractors;"],a:1,
+ opts:["DENY SELECT ON TABLE prod.hr.salaries TO contractors; then keep the schema-level grant","REVOKE SELECT ON SCHEMA prod.hr FROM contractors; then GRANT SELECT per table","REVOKE SELECT ON TABLE prod.hr.salaries FROM contractors; then keep the schema-level grant","REVOKE USE SCHEMA ON SCHEMA prod.hr FROM contractors;"],a:1,
  ex:`The classic DENY statement applies only to the hive_metastore catalog and is not supported by Unity Catalog, so access is narrowed by revoking the broad grant and granting at a lower level. REVOKE removes only an explicitly granted privilege, so revoking SELECT on the table leaves the inherited schema grant in force, and revoking USE SCHEMA would block every table in the schema.`},
 
 /* src: https://docs.databricks.com/aws/en/data-governance/unity-catalog/filters-and-masks/manually-apply */
@@ -138,7 +138,7 @@ Which expression replaces ???`,
  stem:`A governance team must mask the ssn column for the group us_analysts, except admins, across about 400 tables in the catalog prod. New tables with such columns are added every week, and table owners must not be able to remove the protection.
 
 Which solution fits best?`,
- opts:["Run ALTER COLUMN ssn SET MASK on each table, and rerun the script as new tables appear","Create a dynamic view over each table that checks group membership","Create one mask function and grant EXECUTE on it to us_analysts so that it applies automatically","Tag the ssn columns with a governed tag and create a column mask ABAC policy on the catalog that matches the tag"],a:3,
+ opts:["Run ALTER COLUMN ssn SET MASK on each table, and rerun the script as new tables appear","Create a dynamic view over each table that checks group membership, and grant analysts access only to the views","Create one mask function and grant EXECUTE on it to us_analysts so that it applies automatically","Tag the ssn columns with a governed tag and create a column mask ABAC policy on the catalog that matches the tag"],a:3,
  ex:`ABAC policies attached at the catalog or schema level apply to every table whose tags match, including tables added later, and table owners cannot override, modify or remove them; Databricks recommends them for consistent masking across many tables. Table-level masks must be set one table at a time and can be changed by owners, dynamic views multiply objects, and EXECUTE on a function attaches nothing.`},
 
 /* src: https://docs.databricks.com/aws/en/data-governance/unity-catalog/abac/core-concepts ; https://docs.databricks.com/aws/en/data-governance/unity-catalog/abac/best-practices */

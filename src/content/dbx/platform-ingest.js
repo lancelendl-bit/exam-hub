@@ -12,7 +12,7 @@ Which option meets the policy?`,
  stem:`A team loads daily files into a lakehouse table. They need to undo a bad load quickly, give auditors a record of data access and lineage, and let both BI and ML users read the same governed copy of the data.
 
 Which strategy meets these requirements?`,
- opts:["Keep Parquet files in a shared folder with a nightly copy to a backup folder, and control access with notebook permissions","Use a Delta table registered in Unity Catalog, roll back bad loads with RESTORE TABLE, and rely on Unity Catalog for access control, audit logging and lineage","Use a Delta table and run VACUUM with a retention of 0 hours after every load so that storage stays small and rollback remains possible","Expose the raw files through temporary views that each user team re-creates in its own notebooks"],a:1,
+ opts:["Keep Parquet files in a shared folder with a nightly copy to a backup folder, and control access with notebook permissions","Use a Delta table in Unity Catalog, roll back bad loads with RESTORE TABLE, and rely on Unity Catalog for access control, audit logs and lineage","Use a Delta table and run VACUUM with a retention of 0 hours after every load so that storage stays small and rollback remains possible","Expose the raw files through temporary views that each user team re-creates in its own notebooks"],a:1,
  ex:`Delta Lake versions every write, so RESTORE TABLE can return a table to an earlier version, and Unity Catalog adds centralized access control, audit logging and lineage for one shared copy of the data. Running VACUUM with a retention of 0 hours deletes the data files that older versions reference, which removes the ability to restore to those versions.`},
 
 /* src: https://docs.databricks.com/aws/en/compute/serverless/limitations */
@@ -66,7 +66,7 @@ Which option should be added?`,
  stem:`A retailer's Auto Loader stream uses the default file discovery mode on a Unity Catalog external location. Millions of files arrive continuously, the cloud LIST API costs are high, and discovery latency is growing.
 
 What does Databricks recommend to improve scalability and performance?`,
- opts:["Raise cloudFiles.maxFilesPerTrigger so that each micro-batch lists more files","Replace the stream with COPY INTO scheduled every minute","Enable file events on the external location and use file notification mode with cloudFiles.useManagedFileEvents","Set cloudFiles.includeExistingFiles to false so that fewer files are listed"],a:2,
+ opts:["Raise cloudFiles.maxFilesPerTrigger so that each micro-batch lists more files","Replace the stream with a COPY INTO statement scheduled every minute on the same folder","Enable file events on the external location and set cloudFiles.useManagedFileEvents to true","Set cloudFiles.includeExistingFiles to false so that fewer files are listed"],a:2,
  ex:`Directory listing mode lists the input directory, which can significantly increase LIST API costs under continuous triggers. Databricks recommends file notification mode using file events for most workloads, which needs no additional permissions in the Auto Loader stream once file events are enabled on the external location. maxFilesPerTrigger only caps the batch size and does not change how files are discovered, and COPY INTO is better suited to thousands of files, not millions.`},
 
 /* src: https://docs.databricks.com/aws/en/ingestion/cloud-object-storage/auto-loader/production */
@@ -87,7 +87,7 @@ FILEFORMAT = CSV
 FORMAT_OPTIONS ('header' = 'true')</div>
 
 A partner replaces orders_0301.csv, which was loaded earlier, with a corrected file of the same name. Rerunning the statement inserts 0 rows. Why?`,
- opts:["COPY INTO only loads files whose modification time is newer than the last run, and the clock on the partner's system is behind","The statement failed silently because validation is on by default and must be disabled with VALIDATE 0 ROWS","COPY INTO reloads a file only when its name is listed in FILES, and no file list was given","COPY INTO is idempotent and skips files it already loaded even if they were modified since; setting COPY_OPTIONS ('force' = 'true') reloads them"],a:3,
+ opts:["COPY INTO only loads files whose modification time is newer than the last run, and the clock on the partner's system is behind","The statement failed silently because validation is on by default and must be disabled with VALIDATE 0 ROWS","COPY INTO reloads a file only when its name is listed in FILES, and no file list was given","COPY INTO is idempotent and skips files it already loaded even if they were modified since; COPY_OPTIONS ('force' = 'true') reloads them"],a:3,
  ex:`COPY INTO tracks files it has already loaded and skips them on later runs, even when the files have changed since. Setting the force copy option to true disables this idempotency so files are loaded regardless, which can duplicate rows unless the old rows are handled. Listing a file in FILES does not bypass the check, and VALIDATE performs a dry run that writes nothing.`},
 
 /* src: https://docs.databricks.com/aws/en/sql/language-manual/delta-copy-into */
@@ -100,7 +100,7 @@ FILEFORMAT = JSON
 -- missing clause</div>
 
 Which clause completes the statement?`,
- opts:["COPY_OPTIONS ('mergeSchema' = 'true')","COPY_OPTIONS ('force' = 'true')","VALIDATE ALL","PATTERN = '*.json'"],a:0,
+ opts:["COPY_OPTIONS ('mergeSchema' = 'true')","COPY_OPTIONS ('force' = 'true', 'mergeSchema' = 'false')","VALIDATE 100 ROWS","PATTERN = '*.json'"],a:0,
  ex:`The mergeSchema copy option (default false) lets COPY INTO evolve the target schema according to the incoming data. The force option disables idempotency and reloads files, it does not change the schema. VALIDATE only checks the data without writing it, and PATTERN selects files by name.`},
 
 /* src: https://docs.databricks.com/aws/en/ingestion/cloud-object-storage/ */
@@ -108,7 +108,7 @@ Which clause completes the statement?`,
  stem:`A team will ingest files from a cloud storage folder that is expected to accumulate millions of files over time, and the schema of the files is likely to change often. They are choosing between COPY INTO and Auto Loader.
 
 Which choice matches Databricks guidance?`,
- opts:["COPY INTO, because it is idempotent and Databricks recommends it for sources with millions of files","COPY INTO, because only COPY INTO can write to Unity Catalog tables","Auto Loader, because it needs fewer total operations to discover files than COPY INTO and gives better schema inference and evolution","Auto Loader, but only as an always-running stream because it cannot run as a triggered batch job"],a:2,
+ opts:["COPY INTO, because it is idempotent and Databricks recommends it for sources with millions of files","COPY INTO, because only COPY INTO can write to Unity Catalog tables and it scales to any file count","Auto Loader, because it needs fewer operations to discover files and has better schema inference and evolution","Auto Loader, but only as an always-running stream because it cannot run as a triggered batch job"],a:2,
  ex:`Databricks suggests COPY INTO for files on the order of thousands and Auto Loader for millions or more. Auto Loader requires fewer operations to discover files, can split processing into several batches, and provides better primitive data types for schema inference and evolution. Auto Loader can also run as a scheduled batch job with Trigger.AvailableNow.`},
 
 /* src: https://docs.databricks.com/aws/en/ingestion/file-upload/ */
@@ -116,7 +116,7 @@ Which choice matches Databricks guidance?`,
  stem:`A business analyst has three CSV files on a laptop and no access to cloud storage. The analyst has CREATE TABLE on the schema main.finance and can use a running SQL warehouse. They want a Unity Catalog table quickly, without writing code.
 
 What should the analyst use?`,
- opts:["COPY INTO with the FROM clause set to the laptop folder","The Create or modify table upload UI, which creates a Unity Catalog managed table from the files","An Auto Loader stream pointed at the laptop folder","A Lakeflow Connect managed database connector"],a:1,
+ opts:["COPY INTO with the FROM clause set to the laptop folder that holds the CSV files","The Create or modify table upload UI, which makes a managed table","An Auto Loader stream pointed at the laptop folder, with cloudFiles.format set to csv","A Lakeflow Connect managed database connector with the CSV files as its source"],a:1,
  ex:`Databricks provides a UI that creates a Unity Catalog managed table from a file or files, which needs CREATE TABLE in the target schema and a running SQL warehouse. COPY INTO and Auto Loader read from locations the workspace can reach, such as cloud storage or volumes, not a local laptop folder, and a managed database connector reads from a database source.`},
 
 /* src: https://docs.databricks.com/aws/en/ingestion/lakeflow-connect and https://docs.databricks.com/aws/en/ingestion/overview */
@@ -171,6 +171,6 @@ Which choice does Databricks recommend?`,
  stem:`A vendor exposes its data only through a REST API. No Lakeflow Connect connector or partner connector exists for it. The team wants the data in Unity Catalog and needs it refreshed every hour.
 
 Which approach is appropriate?`,
- opts:["Point Auto Loader at the REST endpoint with cloudFiles.format set to json","Run COPY INTO with the API URL as the FROM location","Create a Lakeflow Connect managed database connector and enter the API URL as the host","Write a notebook that calls the API with a REST client, lands the responses in a Unity Catalog volume or table, and schedule it with Lakeflow Jobs"],a:3,
+ opts:["Point Auto Loader at the REST endpoint with cloudFiles.format set to json and schedule it every hour","Schedule COPY INTO every hour with the API URL as the FROM location and FILEFORMAT set to JSON","Create a Lakeflow Connect managed database connector, enter the API URL as the host, and refresh it hourly","Write a notebook that calls the API, lands the responses in a volume or table, and schedule it with Lakeflow Jobs"],a:3,
  ex:`When no managed or partner connector fits, Databricks provides general compute so you can build your own ingestion, such as a notebook that calls the REST API and writes the results to cloud storage or a volume, or directly to a table, orchestrated on a schedule with Lakeflow Jobs. Auto Loader ingests files from cloud storage and COPY INTO loads from a file location, neither reads from an HTTP API, and a database connector reads from databases.`}
 ];

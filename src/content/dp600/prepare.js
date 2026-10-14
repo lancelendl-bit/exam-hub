@@ -2,13 +2,13 @@ export const items=[
 /* src: https://learn.microsoft.com/en-us/fabric/data-factory/data-source-management */
 {s:0,d:2,t:"single",ref:"Manage connections and gateways create cloud connection Fabric",
  stem:`You have a Fabric workspace. Several dataflows and pipelines will read from the same Azure SQL database. You need to create one reusable cloud connection that stores the server, the database, and the authentication method. Where should you create the connection?`,
- opts:["In the Admin portal, under Tenant settings","In the workspace settings of each workspace that uses the database","In Settings, Manage connections and gateways, by selecting New and then Cloud","In the OneLake catalog, on the Govern tab"],a:2,
+ opts:["In the Admin portal, under Tenant settings, by adding a data connection","In the workspace settings of each workspace that uses the database","In Manage connections and gateways, by selecting New and Cloud","In the OneLake catalog, on the Govern tab, by selecting a data source"],a:2,
  ex:`Manage connections and gateways is where you create a shareable cloud connection with a connection type, server, database, and an authentication method (Basic, OAuth2, or Service Principal) that supported Fabric items can reuse. Tenant settings and the Govern tab manage governance and administration, not data source credentials.`},
 
 /* src: https://learn.microsoft.com/en-us/fabric/governance/onelake-catalog-explore */
 {s:0,d:2,t:"single",ref:"OneLake catalog Explore endorsed items certified promoted",
  stem:`Contoso's analysts need to find lakehouses and semantic models that the organization has reviewed and approved. The items are spread across many workspaces, and the analysts don't know the workspace names. What should you recommend they use?`,
- opts:["The Explore tab of the OneLake catalog with the Endorsed items filter","The Real-Time hub","The Govern tab of the OneLake catalog","The lineage view of each workspace"],a:0,
+ opts:["The OneLake catalog Explore tab with the Endorsed items filter","The Real-Time hub, by searching each streaming source in turn","The Govern tab of the OneLake catalog","The lineage view of each workspace, opened one workspace at a time"],a:0,
  ex:`The Explore tab lists the items a user can access across workspaces, and the Endorsed items filter shows certified items first and then promoted items. The Govern tab provides governance insights and administrative settings, and a workspace lineage view only shows relationships inside one workspace.`},
 
 /* src: https://learn.microsoft.com/en-us/fabric/real-time-hub/real-time-hub-overview */
@@ -50,7 +50,7 @@ export const items=[
 /* src: https://learn.microsoft.com/en-us/fabric/data-warehouse/identity */
 {s:0,d:2,t:"single",ref:"Fabric warehouse surrogate key IDENTITY bigint primary key not enforced",
  stem:`You are designing a DimProduct dimension table in a Fabric warehouse for a star schema. The source system identifies products by a ProductCode value. Which design should you use for the key?`,
- opts:["Make ProductCode the primary key and let the warehouse enforce its uniqueness","Define an enforced primary key inline in the CREATE TABLE statement","Add a BIGINT IDENTITY column as a surrogate key and keep ProductCode as a natural key attribute","Add an INT IDENTITY(1000, 1) column as the surrogate key"],a:2,
+ opts:["Make ProductCode the primary key and let the warehouse enforce its uniqueness","Define an enforced primary key inline in the CREATE TABLE statement","Add a BIGINT IDENTITY surrogate key column and keep ProductCode as a natural key","Add an INT IDENTITY(1000, 1) column as the surrogate key and keep ProductCode as an attribute"],a:2,
  ex:`A single-column surrogate key is the recommended dimension key, and IDENTITY columns in a warehouse must be bigint with no custom seed or increment. Primary keys can only be added with ALTER TABLE as NONCLUSTERED and NOT ENFORCED, so the warehouse never enforces uniqueness and the load process must protect it.`},
 
 /* src: https://learn.microsoft.com/en-us/fabric/data-warehouse/dimensional-modeling-dimension-tables */
@@ -62,8 +62,8 @@ export const items=[
 /* src: https://learn.microsoft.com/en-us/fabric/data-warehouse/data-types */
 {s:0,d:2,t:"single",ref:"Fabric warehouse supported data types datetime2 decimal varchar",
  stem:`You are creating a table in a Fabric warehouse for converted source data. The columns store an event timestamp with microsecond precision, a monetary amount, and a customer name. Which set of column data types can you use?`,
- opts:["datetime, money, nvarchar(100)","datetimeoffset, smallmoney, tinyint","datetime2(9), decimal(19,4), nchar(100)","datetime2(6), decimal(19,4), varchar(100)"],a:3,
- ex:`The warehouse stores datetime2 with up to six fractional digits, decimal in place of money, and varchar in place of nvarchar. datetime, money, smallmoney, datetimeoffset, tinyint, nvarchar, and nchar aren't supported for persisted tables, and datetime2(9) exceeds the six-digit limit.`},
+ opts:["datetime, money, nvarchar(100)","datetimeoffset, smallmoney, tinyint","datetime2(9), decimal(19,4), nvarchar(100)","datetime2(6), decimal(19,4), varchar(100)"],a:3,
+ ex:`The warehouse stores datetime2 with up to six fractional digits, decimal in place of money, and varchar in place of nvarchar. datetime, money, smallmoney, datetimeoffset, tinyint, and nvarchar aren't supported for persisted tables, and datetime2(9) exceeds the six-digit limit.`},
 
 /* src: https://learn.microsoft.com/en-us/fabric/data-warehouse/visual-query-editor */
 {s:0,d:2,t:"single",ref:"visual query editor Save as view Fabric warehouse merge queries",
@@ -80,7 +80,7 @@ export const items=[
 /* src: https://learn.microsoft.com/en-us/kusto/query/arg-max-aggregation-function?view=microsoft-fabric */
 {s:0,d:2,t:"single",ref:"KQL summarize arg_max latest row per group eventhouse",
  stem:`An eventhouse table named Telemetry has the columns DeviceId, Timestamp, and Temperature. You need a KQL query that returns the most recent row, with all columns, for each device. Which query should you run?`,
- opts:["Telemetry | summarize arg_max(Timestamp, *) by DeviceId","Telemetry | summarize max(Timestamp) by DeviceId","Telemetry | top 1 by Timestamp desc","Telemetry | distinct DeviceId, Timestamp"],a:0,
+ opts:["Telemetry | summarize arg_max(Timestamp, *) by DeviceId","Telemetry | summarize max(Timestamp), max(Temperature) by DeviceId","Telemetry | top 1 by Timestamp desc","Telemetry | distinct DeviceId, Timestamp, Temperature"],a:0,
  ex:`arg_max(Timestamp, *) inside summarize returns the whole row that has the maximum Timestamp in each DeviceId group. max() returns only the timestamp value, and top 1 returns a single row for the entire table.`},
 
 /* src: https://learn.microsoft.com/en-us/dax/dax-queries */
@@ -125,7 +125,7 @@ FROM stg.Orders
 /* src: https://learn.microsoft.com/en-us/fabric/enterprise/powerbi/onelake-integration-overview */
 {s:0,d:2,t:"multi",n:2,ref:"OneLake integration semantic models import tables Delta refresh",
  stem:`You plan to turn on OneLake integration for an import semantic model so that data engineers can query its tables as Delta tables. Which two statements are true? Each correct answer presents a complete fact.`,
- opts:["Measures and calculation group tables are exported as Delta tables","The model's import data is written to Delta tables only after a manual or scheduled refresh runs","The feature is supported on Power BI Pro and Premium Per User workspaces","DirectQuery tables are exported as Delta tables","The feature requires a Power BI Premium P SKU or a Fabric F SKU"],a:[1,4],
+ opts:["Measures and calculation group tables are exported as Delta tables","The model's import data is written to Delta tables only after a refresh runs","The feature is supported on Power BI Pro and Premium Per User workspaces","DirectQuery tables are exported as Delta tables on refresh","The feature requires a Power BI Premium P SKU or a Fabric F SKU"],a:[1,4],
  ex:`Exported Delta tables appear and update only when the model is refreshed, and OneLake integration is supported on Premium P and Fabric F SKUs only. Measures, calculation group tables, DirectQuery tables, and hybrid tables can't be exported, and Pro and Premium Per User aren't supported.`},
 
 /* src: https://learn.microsoft.com/en-us/dax/dax-queries */
