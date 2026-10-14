@@ -7,10 +7,10 @@ An installable, offline practice app for Microsoft Fabric (DP-700, DP-600) and D
 - **DP-600:** one 60-item mock exam across the three skill areas, with items checked against Microsoft Learn (each item's source is in a comment above it in `src/content/dp600/`).
 - **Missed-item drill:** everything you got wrong across exams, in one run.
 - **Check answer** on every item, free section jumping, and "retake with missed first".
-- **Reference tabs:**
-  - **Service map:** interactive map of Fabric items and how they connect, with flows and a glossary.
-  - **Monitoring map:** which tool monitors which item, and when to use it.
-  - **Stem decoder:** searchable phrase → answer tables.
+- **Reference tabs** (they follow the certification you have selected):
+  - **Service map** and **Monitoring map** are hand-built DP-700 diagrams, so they only show for DP-700.
+  - **Stem decoder:** searchable phrase → answer tables for each cert that has one. A **Stem Decoder Quiz** is generated from the same data.
+- **Reset…** on an exam card either resets progress (History stays) or deletes all data for that exam, including its attempts in History.
 - **History** page: score trend with the 700 pass line, skill-area accuracy, topics weakest first, items you keep missing, and a log of every attempt you can export as CSV. Results you finished before this existed are picked up automatically.
 - **Find a cert** page: where you stand (practice progress for every cert in the app), a list where you record the certifications you have really passed, and Azure-related certifications you could pursue next, each with its official skill areas. Suggestions adapt to what you have passed and practiced. Shortlist the ones you want.
 - **Cloud sync:** sign in on each device (desktop app, browser, iPhone) and progress and history follow you. See [Sync setup](#sync-setup).
@@ -33,6 +33,7 @@ npm install
 npm run dev      # http://localhost:5173
 npm test         # content integrity + engine tests (vitest)
 npm run build    # production build in dist/
+npm run decoder:preview -- dp600   # sample of a cert's generated decoder quiz
 ```
 
 ### Turn on hosting (one time)
@@ -81,6 +82,9 @@ Self-hosted Supabase works unchanged: set the Project URL to your server. Two th
 | `supabase/schema.sql` | The one table sync needs, with row-level security |
 | `src/discover.js`, `src/discoverView.js` | Find a cert page: shortlist, passed certifications, suggestions, filters |
 | `src/catalog/` | Certification facts for that page: `inapp.js` (certs with exams), `microsoft.js` (Azure-related candidates) |
+| `src/decoders.js`, `src/content/decoders/` | Stem decoder data per cert. Each one gives the decoder page and a generated quiz |
+| `src/decoderQuiz.js`, `src/decoderView.js` | Builds the quiz from decoder data, and renders the decoder page |
+| `.claude/skills/stem-decoder/` | Project skill: how to generate a decoder and quiz for a new cert |
 | `src/backup.js` | Progress export / import |
 | `maps/*.html` | The three reference pages, loaded in the hub's tabs |
 | `tests/` | Vitest suites |

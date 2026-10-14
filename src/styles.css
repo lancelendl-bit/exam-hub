@@ -51,6 +51,10 @@ button,select,input{font:inherit;color:inherit}
 .tip{position:absolute;transform:translate(-50%,-100%);background:var(--surface);color:var(--fg);border:1px solid var(--line);border-radius:var(--r);padding:8px 10px;font-size:13px;line-height:1.35;pointer-events:none;box-shadow:0 4px 14px rgba(0,0,0,.18);white-space:nowrap;z-index:2}
 .tip span{color:var(--muted);font-size:12px}
 .legend svg{vertical-align:-2px}
+.resetbox{display:flex;flex-wrap:wrap;gap:6px;align-items:center;flex-basis:100%}
+.resetbox small{flex-basis:100%}
+.btn.danger{border-color:var(--bad);color:var(--bad)}
+.btn.danger:hover{background:var(--bad-soft)}
 .finder input:not([type=checkbox]),.finder select{border:1px solid var(--line);border-radius:var(--r);background:var(--bg);color:var(--fg);padding:8px 10px;max-width:100%}
 .finder input[type=search]{width:100%}
 .finder .row{flex-wrap:wrap}
@@ -184,3 +188,8 @@ pre,code{font-family:var(--f-mono);font-size:13px}
 .dlg textarea{width:100%;font-family:var(--f-mono);font-size:12px;border:1px solid var(--line);border-radius:var(--r);background:var(--bg);color:var(--fg);padding:8px}
 body{padding-bottom:env(safe-area-inset-bottom,0px)}
 @media (max-width:640px){.views{overflow-x:auto;max-width:100%;scrollbar-width:none}.views button{white-space:nowrap}}
+.decoder td.first{font-weight:600;width:38%}
+.decoder td.wrongpick{color:var(--warn)}
+.decoder mark{background:var(--warn-soft);color:inherit;border-radius:2px}
+.decoder section{scroll-margin-top:70px}
+@media (max-width:640px){.decoder .hidesm{display:none}}

@@ -6,6 +6,9 @@ import exam3Content from "./content/exam3.js";
 import exam4Content from "./content/exam4.js";
 import dp600Exam1 from "./content/dp600/exam1.js";
 import dbxExam1 from "./content/dbx/exam1.js";
+import { CERTS } from "./certs.js";
+import { DECODERS, HAND_QUIZ, quizIdFor } from "./decoders.js";
+import { buildDecoderQuiz } from "./decoderQuiz.js";
 
 export const EXAMS = [
   { id: "e1", cert: "dp700", num: "EXAM I", title: "Mock Exam I", sub: "Original simulation", desc: "One case study, mixed item types, and two no-return series. The broadest first pass over the outline.", build: exam1Content },
@@ -17,3 +20,14 @@ export const EXAMS = [
 ];
 
 export const examsOf = (certId) => EXAMS.filter((e) => e.cert === certId);
+
+/* A decoder quiz is generated from a cert's decoder data, for certs that don't have a hand-written one. */
+Object.keys(DECODERS).filter((id) => !HAND_QUIZ[id]).forEach((id) => {
+  const cert = CERTS.find((c) => c.id === id);
+  if (!cert) return;
+  EXAMS.push({
+    id: quizIdFor(id), cert: id, num: "QUIZ", title: `${cert.code} Stem Decoder Quiz`, sub: "Generated from the stem decoder",
+    desc: "Each question shows a phrase from a question stem and asks what it points to. Wrong options include the typical trap the decoder warns about. Built automatically from the stem decoder.",
+    build: () => buildDecoderQuiz(DECODERS[id], { certId: id }),
+  });
+});

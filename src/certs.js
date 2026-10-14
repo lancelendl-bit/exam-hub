@@ -6,14 +6,15 @@
 const MS_DOCS = { label: "Microsoft Learn", search: "https://learn.microsoft.com/en-us/search/?terms=" };
 const DBX_DOCS = { label: "the Databricks docs", search: "https://www.google.com/search?q=site%3Adocs.databricks.com+" };
 
-/* Optional per cert: `family` ("fabric" shows the Fabric reference maps), `docs`, and `examDay` (bullets for the hub). */
+/* Optional per cert: `maps` (which reference diagrams it has: "svc" service map, "mon" monitoring map),
+   `docs`, and `examDay` (bullets for the hub). The Stem decoder tab shows for any cert with a decoder in src/decoders.js. */
 export const CERTS = [
   {
     id: "dp700",
     code: "DP-700",
     title: "Microsoft Fabric Data Engineer Associate",
     short: "Data Engineer",
-    family: "fabric",
+    maps: ["svc", "mon"],
     docs: MS_DOCS,
     domains: {
       1: "Implement and manage an analytics solution",
@@ -36,7 +37,6 @@ export const CERTS = [
     code: "DP-600",
     title: "Microsoft Fabric Analytics Engineer Associate",
     short: "Analytics Engineer",
-    family: "fabric",
     docs: MS_DOCS,
     // Skill areas and weights from the Microsoft Learn study guide (skills measured as of October 19, 2026).
     domains: {
@@ -61,7 +61,6 @@ export const CERTS = [
     code: "Databricks DE",
     title: "Databricks Certified Data Engineer Associate",
     short: "Data Engineer Associate",
-    family: "databricks",
     docs: DBX_DOCS,
     // Skill areas and weights from the official exam guide (exam version as of May 4, 2026).
     domains: {

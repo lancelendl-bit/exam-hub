@@ -2,13 +2,15 @@ import "./styles.css";
 import {rng,permute,inverse,shuffleQ,remap,maxPts,pts,answered,missedFrom,scoreOf} from "./engine/core.js";
 import {CERTS,certOf,docsUrl} from "./certs.js";
 import {EXAMS,examsOf} from "./exams.js";
-import {loadHistory,saveHistory,addAttempt,removeAttempt,makeAttempt,seedFromStates} from "./history.js";
+import {loadHistory,saveHistory,addAttempt,removeAttempt,removeExamAttempts,makeAttempt,seedFromStates} from "./history.js";
 import {historyHTML,bindHistory} from "./historyView.js";
 import {createSync} from "./sync/index.js";
 import {initSyncUI} from "./sync/ui.js";
 import {ALL,CANDIDATES} from "./catalog/index.js";
 import {loadShortlist,saveShortlist,toggleShortlist,loadEarned,saveEarned,addEarned,removeEarned,setEarnedDate,practiceStatus,fitFor} from "./discover.js";
 import {findHTML,bindFind} from "./discoverView.js";
+import {DECODERS} from "./decoders.js";
+import {decoderHTML,bindDecoder} from "./decoderView.js";
 import {initBackup} from "./backup.js";
 import {registerSW} from "virtual:pwa-register";
 registerSW({immediate:true});
@@ -32,7 +34,9 @@ const docsLink=ref=>`<a href="${docsUrl(cert(),ref)}" target="_blank" rel="noope
 const MS_DAY=["Passing score is 700 of 1000. Multi-part items award partial credit, so never leave a part blank.","Budget about 15 minutes per case study and 90 seconds for other items. The real exam does not let you return to a case or a series item once you leave it.","Read the last sentence of the stem first: it names the constraint that decides the answer (least effort, least privilege, lowest cost)."];
 const examDay=()=>cert().examDay||MS_DAY;
 /* The Fabric reference maps only make sense for the Fabric certifications. */
-function applyFamily(){const f=cert().family==="fabric";document.querySelectorAll('#views [data-view="svc"],#views [data-view="mon"],#views [data-view="stem"]').forEach(b=>{b.hidden=!f})}
+function applyMaps(){const maps=cert().maps||[],hasDecoder=!!DECODERS[cert().id];
+ document.querySelectorAll("#views [data-view]").forEach(b=>{const v=b.dataset.view;
+  if(v==="svc"||v==="mon")b.hidden=!maps.includes(v);else if(v==="stem")b.hidden=!hasDecoder})}
 const drillKey=()=>CERT==="dp700"?"drill":"drill-"+CERT;
 /* Cloud sync (see src/sync). Inert until a server is configured and you sign in. */
 let syncUI=null;
@@ -43,7 +47,7 @@ function afterSync(keys){
   if(E.id==="drill")E=null; /* a drill is rebuilt from its saved state, so leave it */
   else{const st=migrate(loadState(E.id),Q);if(st)S=st;else E=null}
  }
- if(VIEW==="exams"||VIEW==="hist"||VIEW==="find")render()}
+ if(VIEW==="exams"||VIEW==="hist"||VIEW==="find"||VIEW==="stem")render()}
 function setCert(id){CERT=certOf(id).id;try{localStorage.setItem(PREF_KEY,JSON.stringify({cert:CERT,at:Date.now()}))}catch(e){}render();window.scrollTo(0,0)}
 function fresh(){return{v:2,phase:"q",sec:0,idx:0,ans:{},mark:{},checked:{},caseTab:0,filter:"all",confirm:false,plan:null,prevMissed:null,lastScore:null}}
 /* A reset exam is stored as a tombstone so the reset syncs to your other devices. */
@@ -99,9 +103,10 @@ function finish(){const at=Date.now();S.phase="results";S.finishedAt=at;S.lastSc
 
 /* ---------- Render ---------- */
 function render(){
- const app=$("#app");app.className="fade";applyFamily();
+ const app=$("#app");app.className="fade";applyMaps();
  if(VIEW==="hist")return historyPage(app);
  if(VIEW==="find")return findPage(app);
+ if(VIEW==="stem")return decoderPage(app);
  $("#menu").hidden=!E;$("#pills").innerHTML="";$("#prog").textContent="";
  if(!E){$("#secname").textContent=cert().title;return hub(app)}
  $("#secname").textContent=E.title+(S.phase==="results"?" · Results":"");
@@ -115,7 +120,15 @@ function render(){
  if(S.phase==="results")return results(app);
 }
 
+/* Reset controls on a card. "Reset progress" restarts the exam but keeps its History. "Delete all data" also removes its attempts from History. */
+let RESETTING=null;
+const sid=id=>id==="drill"?drillKey():id;
+function dataBtns(id,has){if(!has)return"";
+ return RESETTING===id?`<span class="resetbox" role="group" aria-label="Reset options"><button class="btn small" data-rp="${id}">Reset progress</button><button class="btn small danger" data-rd="${id}">Delete all data</button><button class="btn small ghost" data-rc="1">Cancel</button><small class="prog">Reset progress keeps your History. Delete all data also removes this exam's attempts from History.</small></span>`
+  :`<button class="btn small ghost" data-reset="${id}">Reset…</button>`}
+function deleteExamData(id){clearState(sid(id));try{const h=loadHistory();if(removeExamAttempts(h,id,CERT)){saveHistory(h);sync.touch()}}catch(e){}}
 function hub(app){
+ const hist=loadHistory(),hasHist=id=>hist.attempts.some(a=>a.exam===id&&a.cert===CERT);
  const cards=examsOf(CERT).map(d=>{
   const ex=examDef(d.id);const st=migrate(loadState(d.id),ex.Q);
   const n=ex.Q.length;const answeredN=st?Object.keys(st.ans).filter(i=>answered(ex.Q[i],st.ans[i])).length:0;
@@ -128,12 +141,12 @@ function hub(app){
    btns=`<button class="btn primary" data-open="${d.id}" data-mode="resume">Resume</button><button class="btn ghost" data-open="${d.id}" data-mode="new">Start over</button>`}
   return `<article class="card examcard"><span class="num">${d.num}</span><h2>${esc(d.title)}</h2><p class="meta">${esc(d.desc)}</p>
   <p class="meta">${n} items · ${ex.SECTIONS.length} sections: ${ex.SECTIONS.map(s=>esc(s.name)).join(", ")}</p>
-  <div class="status">${status}</div><div class="btns">${btns}${st?`<button class="btn small ghost" data-reset="${d.id}">Reset</button>`:""}</div></article>`}).join("");
+  <div class="status">${status}</div><div class="btns">${btns}${dataBtns(d.id,st||hasHist(d.id))}</div></article>`}).join("");
  const drillSt=loadState(drillKey());
  let drillCount=0;examsOf(CERT).forEach(d=>{const es=loadState(d.id);if(es)drillCount+=missedFrom(es,examDef(d.id).Q).length});
  const drill=`<article class="card examcard drill"><span class="num">DRILL</span><h2>Missed-item drill</h2><p class="meta">Every item you got wrong or partly wrong on your most recent attempt of each exam, in one short run. Rebuilt each time you start it.</p>
   <div class="status">${drillCount?`<span class="tag warn">${drillCount} items waiting</span>`:`<span class="tag muted">Nothing missed yet</span>`}${drillSt&&drillSt.phase!=="results"&&drillSt.items?`<span class="prog">A drill is in progress</span>`:""}</div>
-  <div class="btns">${drillSt&&drillSt.phase!=="results"&&drillSt.items?`<button class="btn primary" data-drill="resume">Resume drill</button>`:""}<button class="btn ${drillSt&&drillSt.phase!=="results"&&drillSt.items?"":"primary"}" data-drill="new" ${drillCount?"":"disabled"}>Start drill</button></div></article>`;
+  <div class="btns">${drillSt&&drillSt.phase!=="results"&&drillSt.items?`<button class="btn primary" data-drill="resume">Resume drill</button>`:""}<button class="btn ${drillSt&&drillSt.phase!=="results"&&drillSt.items?"":"primary"}" data-drill="new" ${drillCount?"":"disabled"}>Start drill</button>${dataBtns("drill",drillSt||hasHist("drill"))}</div></article>`;
  const switcher=CERTS.length>1?`<div class="certs" role="group" aria-label="Certification">${CERTS.map(c=>`<button class="pill" aria-pressed="${c.id===CERT}" data-cert="${c.id}" title="${esc(c.title)}">${esc(c.code)}<small style="margin-left:6px;font-weight:500">${esc(c.short)}</small></button>`).join("")}</div>`:"";
  app.innerHTML=`<div class="stack">${switcher}
  <div class="stack" style="gap:8px"><span class="tag">Exam ${cert().code} · practice</span><h1>Choose an exam</h1>
@@ -145,7 +158,10 @@ function hub(app){
  document.querySelectorAll("[data-cert]").forEach(b=>b.onclick=()=>setCert(b.dataset.cert));
  document.querySelectorAll("[data-open]").forEach(b=>b.onclick=()=>openExam(b.dataset.open,b.dataset.mode));
  document.querySelectorAll("[data-drill]").forEach(b=>b.onclick=()=>openDrill(b.dataset.drill));
- document.querySelectorAll("[data-reset]").forEach(b=>b.onclick=()=>{if(b.dataset.armed){clearState(b.dataset.reset);render()}else{b.dataset.armed="1";b.textContent="Confirm reset";b.classList.remove("ghost")}});
+ document.querySelectorAll("[data-reset]").forEach(b=>b.onclick=()=>{RESETTING=b.dataset.reset;render()});
+ document.querySelectorAll("[data-rc]").forEach(b=>b.onclick=()=>{RESETTING=null;render()});
+ document.querySelectorAll("[data-rp]").forEach(b=>b.onclick=()=>{clearState(sid(b.dataset.rp));RESETTING=null;render()});
+ document.querySelectorAll("[data-rd]").forEach(b=>b.onclick=()=>{deleteExamData(b.dataset.rd);RESETTING=null;render()});
 }
 
 function typeLabel(q){return{single:"Choose one",multi:`Choose ${q.n}`,hot:"Hot area",build:"Build list",match:"Drag and drop",yesno:"Yes / No statements",series:`Series ${q.grp}`}[q.t]}
@@ -340,14 +356,22 @@ function findPage(app){
   onPractice:id=>{setCert(id);setView("exams")},
   onError:m=>{FERR=m;render()}})}
 
-/* ---------- Reference views ---------- */
-const PAGES={svc:"maps/service.html",mon:"maps/monitoring.html",stem:"maps/stem.html"};
+/* ---------- Stem decoder ---------- */
+function decoderPage(app){
+ $("#menu").hidden=true;$("#pills").innerHTML="";$("#prog").textContent="";$("#secname").textContent=cert().code+" · Stem decoder";
+ const d=DECODERS[cert().id];
+ if(!d){app.innerHTML=`<div class="card stack"><h2>No stem decoder for ${esc(cert().code)} yet</h2><p class="meta">Decoders are generated per exam. See the stem-decoder skill in this project.</p></div>`;return}
+ app.innerHTML=decoderHTML(cert(),d);
+ bindDecoder(app,d,{onQuiz:()=>setView("exams")})}
+
+/* ---------- Reference views (diagrams that only some certs have) ---------- */
+const PAGES={svc:"maps/service.html",mon:"maps/monitoring.html"};
 let VIEW="exams";
 function setView(v){VIEW=v;
  document.querySelectorAll("#views button").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.view===v)));
- const ex=v==="exams",inApp=ex||v==="hist"||v==="find";$("#app").hidden=!inApp;$("#pills").hidden=!ex;$("#prog").hidden=!ex;$("#menu").hidden=!ex||!E;
- ["svc","mon","stem"].forEach(k=>{let f=document.getElementById("f-"+k);
-  if(k===v&&!f){f=document.createElement("iframe");f.id="f-"+k;f.className="frame";f.title={svc:"Fabric service map",mon:"Fabric monitoring map",stem:"DP-700 stem decoder"}[k];
+ const ex=v==="exams",inApp=ex||v==="hist"||v==="find"||v==="stem";$("#app").hidden=!inApp;$("#pills").hidden=!ex;$("#prog").hidden=!ex;$("#menu").hidden=!ex||!E;
+ ["svc","mon"].forEach(k=>{let f=document.getElementById("f-"+k);
+  if(k===v&&!f){f=document.createElement("iframe");f.id="f-"+k;f.className="frame";f.title={svc:"Fabric service map",mon:"Fabric monitoring map"}[k];
    f.src=PAGES[k];
    document.getElementById("frames").appendChild(f)}
   if(f)f.hidden=k!==v});

@@ -11,7 +11,6 @@ export default defineConfig({
         main: resolve(import.meta.dirname, "index.html"),
         service: resolve(import.meta.dirname, "maps/service.html"),
         monitoring: resolve(import.meta.dirname, "maps/monitoring.html"),
-        stem: resolve(import.meta.dirname, "maps/stem.html"),
       },
     },
   },

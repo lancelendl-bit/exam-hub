@@ -9,6 +9,7 @@
     "build": "vite build",
     "preview": "vite preview",
     "test": "vitest run",
+    "decoder:preview": "node scripts/preview-decoder.mjs",
     "icons": "python3 scripts/make-icons.py"
   },
   "devDependencies": {

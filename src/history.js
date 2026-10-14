@@ -57,6 +57,13 @@ export function removeAttempt(h, id) {
   if (!h.removed.includes(id)) h.removed.push(id);
 }
 
+/** Removes every attempt of one exam (optionally only for one cert). Returns how many were removed. */
+export function removeExamAttempts(h, examId, certId) {
+  const ids = h.attempts.filter((a) => a.exam === examId && (!certId || a.cert === certId)).map((a) => a.id);
+  ids.forEach((id) => removeAttempt(h, id));
+  return ids.length;
+}
+
 /** Union of two histories. Used when syncing devices. */
 export function mergeHistory(a, b) {
   const removed = [...new Set([...(a.removed || []), ...(b.removed || [])])];
