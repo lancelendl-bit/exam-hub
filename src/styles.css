@@ -193,3 +193,50 @@ body{padding-bottom:env(safe-area-inset-bottom,0px)}
 .decoder mark{background:var(--warn-soft);color:inherit;border-radius:2px}
 .decoder section{scroll-margin-top:70px}
 @media (max-width:640px){.decoder .hidesm{display:none}}
+/* Service map (generated from src/content/maps) */
+.mapview{--mg0:#1d4ed8;--mg1:#b45309;--mg2:#0d6b5b;--mg3:#be185d;--mg4:#475569;--mg5:#7c3aed;--mg6:#15803d;--mg7:#0e7490}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .mapview{--mg0:#7ea2f5;--mg1:#f0a64a;--mg2:#4fbfa6;--mg3:#f28db6;--mg4:#a3b2c4;--mg5:#c2a3f7;--mg6:#6fdc92;--mg7:#67d4ec}}
+:root[data-theme="dark"] .mapview{--mg0:#7ea2f5;--mg1:#f0a64a;--mg2:#4fbfa6;--mg3:#f28db6;--mg4:#a3b2c4;--mg5:#c2a3f7;--mg6:#6fdc92;--mg7:#67d4ec}
+.mapview input[type=search]{border:1px solid var(--line);border-radius:var(--r);background:var(--bg);color:var(--fg);padding:8px 10px;width:100%}
+.mapview .chip{display:inline-flex;align-items:center;gap:6px}
+.mdot{display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--c,var(--accent));flex:none}
+.mapgrid{display:grid;grid-template-columns:minmax(0,2fr) minmax(280px,1fr);gap:16px;align-items:start}
+@media (max-width:980px){.mapgrid{grid-template-columns:1fr}}
+.canvas{padding:14px;overflow-x:auto}
+.lanes{position:relative;display:grid;gap:34px;min-width:640px}
+.lane{display:flex;flex-direction:column;gap:12px}
+.lane h4{margin:0 0 2px;font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.mnode{position:relative;z-index:1;text-align:left;cursor:pointer;background:var(--surface);border:1px solid var(--line);border-left:5px solid var(--c);border-radius:8px;padding:8px 10px;display:flex;flex-direction:column;gap:1px;transition:opacity .12s}
+.mnode:hover{border-color:var(--c)}
+.mnode:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.mnode .mname{font-weight:700;font-size:14px}
+.mnode .msub{font-size:12px;color:var(--muted)}
+.mnode.sel{box-shadow:0 0 0 2px var(--c);background:var(--sunk)}
+.mnode.dim{opacity:.28}
+.mbadge{position:absolute;top:-8px;right:-8px;width:22px;height:22px;border-radius:50%;background:var(--accent);color:var(--accent-ink);font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center}
+.links{position:absolute;inset:0;pointer-events:none;overflow:visible;color:var(--muted)}
+.medge{fill:none;stroke:var(--line);stroke-width:1.5;transition:opacity .12s}
+.medge.on{stroke:var(--accent);color:var(--accent);stroke-width:2.5}
+.medge.dim{opacity:.25}
+.mlabel{font-size:11px;fill:var(--accent);font-weight:600;opacity:0}
+.mlabel.on{opacity:1}
+@media (max-width:760px){.lanes{grid-template-columns:1fr !important;min-width:0}.links{display:none}}
+.mpanel{position:sticky;top:76px;max-height:calc(100vh - 100px);overflow:auto}
+@media (max-width:980px){.mpanel{position:static;max-height:none}}
+.kicker{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--c)}
+.mfeat{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:4px}
+.mlinks{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.mlink{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:3px 10px;font-size:13px;cursor:pointer}
+.mlink:hover{border-color:var(--c)}
+.mdl{margin:6px 0 0;display:flex;flex-direction:column;gap:6px}
+.mdl dt{font-weight:700}
+.mdl dd{margin:0 0 4px;color:var(--muted)}
+.mtraps{background:var(--warn-soft);border-radius:var(--r);padding:10px 12px}
+.mtraps h3{color:var(--warn)}
+.mtraps ul{margin:6px 0 0;padding-left:18px;display:flex;flex-direction:column;gap:4px}
+.mflow{text-align:left;display:flex;flex-direction:column;gap:2px;border:1px solid var(--line);background:var(--surface);border-radius:var(--r);padding:8px 12px;cursor:pointer}
+.mflow[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-soft)}
+.msteps{margin:12px 0 0;padding-left:20px;display:flex;flex-direction:column;gap:10px}
+.msteps p{margin:4px 0 0}
+.mapgrid.stacked{grid-template-columns:1fr}
+.mapgrid.stacked .mpanel{position:static;max-height:none}
