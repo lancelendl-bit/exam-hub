@@ -7,6 +7,7 @@ An installable, offline practice app for Microsoft Fabric (DP-700, DP-600), Micr
 - **DP-600:** one 60-item mock exam across the three skill areas, with items checked against Microsoft Learn (each item's source is in a comment above it in `src/content/dp600/`).
 - **DP-800 (SQL AI Developer):** one 64-item mock exam across the three skill areas (single and multiple answer), with a stem decoder, a generated Stem Decoder Quiz and a service map. Each item's source is in a comment above it in `src/content/dp800/`.
 - **AI-200 (Azure AI Cloud Developer):** one 70-item mock exam across the four skill areas (single and multiple answer), with a stem decoder, a generated Stem Decoder Quiz and a service map. Each item's source is in a comment above it in `src/content/ai200/`.
+- **DP-900 (Azure Data Fundamentals):** one 60-item mock exam across the four skill areas (single and multiple answer), with a stem decoder, a generated Stem Decoder Quiz and a service map. Each item's source is in a comment above it in `src/content/dp900/`.
 - **Missed-item drill:** everything you got wrong across exams, in one run.
 - **Check answer** on every item, free section jumping, and "retake with missed first".
 - **Reference tabs** (they follow the certification you have selected):

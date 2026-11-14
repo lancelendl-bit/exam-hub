@@ -5,5 +5,6 @@ import dp600 from "./content/maps/dp600.js";
 import dbxde from "./content/maps/dbxde.js";
 import dp800 from "./content/maps/dp800.js";
 import ai200 from "./content/maps/ai200.js";
+import dp900 from "./content/maps/dp900.js";
 
-export const MAPS = { dp600, dbxde, dp800, ai200 };
+export const MAPS = { dp600, dbxde, dp800, ai200, dp900 };

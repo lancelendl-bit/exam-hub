@@ -109,6 +109,32 @@ export const CERTS = [
     ],
   },
   {
+    id: "dp900",
+    code: "DP-900",
+    title: "Azure Data Fundamentals",
+    short: "Data Fundamentals",
+    docs: MS_DOCS,
+    // Skill areas and weights from the Microsoft Learn study guide (skills measured as of July 21, 2026): 1 is 25-30%, 2 is 20-25%, 3 is 15-20%, 4 is 25-30%.
+    domains: {
+      1: "Describe core data concepts",
+      2: "Identify considerations for relational data on Azure",
+      3: "Describe considerations for working with non-relational data on Azure",
+      4: "Describe an analytics workload",
+    },
+    topics: [
+      { id: "sqlfam", name: "Azure SQL family", re: /azure sql|managed instance|sql server on|elastic pool|hyperscale|serverless|iaas|paas|lift and shift/i },
+      { id: "oss", name: "Open-source databases", re: /postgresql|mysql|mariadb|open-source|community/i },
+      { id: "rel", name: "Relational concepts and SQL", re: /normaliz|primary key|foreign key|\bsql\b|select|insert|\bview\b|index|stored procedure|relational|table/i },
+      { id: "store", name: "Blob, Files and Table storage", re: /blob|azure files|table storage|queue|storage account|access tier|archive|data lake|smb|nfs/i },
+      { id: "cosmos", name: "Azure Cosmos DB", re: /cosmos|gremlin|cassandra|mongodb|document|graph|key-value|wide-column/i },
+      { id: "rt", name: "Streaming and real-time", re: /stream|event hubs|real-time|batch|iot|telemetry|kql|eventstream/i },
+      { id: "pbi", name: "Power BI and visualization", re: /power bi|visual|dashboard|report|chart|semantic|data model|dax/i },
+      { id: "analytics", name: "Analytics platforms", re: /fabric|databricks|synapse|data factory|etl|elt|onelake|lakehouse|warehouse|pipeline|ingest/i },
+      { id: "concepts", name: "Core data concepts", re: /structured|semi-structured|unstructured|json|parquet|csv|oltp|olap|transactional|analytical|dba|data engineer|data analyst|role/i },
+      { id: "other", name: "Other", re: /./ },
+    ],
+  },
+  {
     id: "dbxde",
     code: "Databricks DE",
     title: "Databricks Certified Data Engineer Associate",

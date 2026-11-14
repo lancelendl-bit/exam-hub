@@ -12,19 +12,6 @@ export const entries=[
  buildsOn:["dbxde","dp900"],
  url:"https://learn.microsoft.com/en-us/credentials/certifications/resources/study-guides/dp-750",
  src:["https://learn.microsoft.com/en-us/credentials/certifications/resources/study-guides/dp-750"],asOf:"2026-10"},
-{id:"dp900",vendor:"Microsoft",code:"DP-900",title:"Azure Data Fundamentals",level:"Fundamentals",topics:["Databases and SQL","Cloud fundamentals"],platforms:["Azure"],
- audience:"An entry point for people starting to work with data in the cloud who want to show they grasp relational and non-relational data and the main Azure data services.",
- skills:[
-  {name:"Describe core data concepts",weight:"25–30%"},
-  {name:"Identify considerations for relational data on Azure",weight:"20–25%"},
-  {name:"Describe considerations for working with non-relational data on Azure",weight:"15–20%"},
-  {name:"Describe an analytics workload",weight:"25–30%"}
- ],
- format:"",
- prerequisites:"None required",
- buildsOn:[],
- url:"https://learn.microsoft.com/en-us/credentials/certifications/azure-data-fundamentals/",
- src:["https://learn.microsoft.com/en-us/credentials/certifications/azure-data-fundamentals/","https://learn.microsoft.com/en-us/credentials/certifications/resources/study-guides/dp-900"],asOf:"2026-10"},
 {id:"az900",vendor:"Microsoft",code:"AZ-900",title:"Azure Fundamentals",level:"Fundamentals",topics:["Cloud fundamentals"],platforms:["Azure"],
  audience:"A common first step into Azure for IT, database or development professionals who want to show they know core cloud concepts, Azure services, governance and management tools.",
  skills:[

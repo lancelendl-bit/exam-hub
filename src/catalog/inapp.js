@@ -77,4 +77,18 @@ export const entries = [
     url: "https://learn.microsoft.com/en-us/credentials/certifications/exams/ai-200/",
     src: ["https://learn.microsoft.com/en-us/credentials/certifications/exams/ai-200/", "https://learn.microsoft.com/en-us/credentials/certifications/resources/study-guides/ai-200"], asOf: "2026-10", inApp: true,
   },
+  {
+    id: "dp900", vendor: "Microsoft", code: "DP-900", title: "Azure Data Fundamentals", level: "Fundamentals",
+    topics: ["Databases and SQL", "Cloud fundamentals"], platforms: ["Azure"],
+    audience: "An entry point for people starting to work with data in the cloud who want to show they grasp relational and non-relational data and the main Azure data services.",
+    skills: [
+      { name: "Describe core data concepts", weight: "25–30%" },
+      { name: "Identify considerations for relational data on Azure", weight: "20–25%" },
+      { name: "Describe considerations for working with non-relational data on Azure", weight: "15–20%" },
+      { name: "Describe an analytics workload", weight: "25–30%" },
+    ],
+    format: "", prerequisites: "None required", buildsOn: [],
+    url: "https://learn.microsoft.com/en-us/credentials/certifications/azure-data-fundamentals/",
+    src: ["https://learn.microsoft.com/en-us/credentials/certifications/azure-data-fundamentals/", "https://learn.microsoft.com/en-us/credentials/certifications/resources/study-guides/dp-900"], asOf: "2026-11", inApp: true,
+  },
 ];
