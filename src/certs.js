@@ -109,6 +109,34 @@ export const CERTS = [
     ],
   },
   {
+    id: "ai901",
+    code: "AI-901",
+    title: "Azure AI Fundamentals",
+    short: "AI Fundamentals",
+    docs: MS_DOCS,
+    // Skill areas and weights from the Microsoft Learn study guide (skills measured as of April 15, 2026): 1 is 40-45%, 2 is 55-60%.
+    // AI-901 replaced AI-900 (retired June 30, 2026); both earn Microsoft Certified: Azure AI Fundamentals.
+    domains: {
+      1: "Identify AI concepts and capabilities",
+      2: "Implement AI solutions by using Microsoft Foundry",
+    },
+    topics: [
+      { id: "rai", name: "Responsible AI", re: /responsible|fairness|reliability|safety|privacy|inclusive|transparen|accountab|content filter|guardrail|harm/i },
+      { id: "models", name: "Models, deployment and parameters", re: /model catalog|deployment|temperature|top_p|top p|max tokens|token|context window|fine-tun|transformer|embedding|llm|slm|serverless|provisioned|global standard/i },
+      { id: "prompt", name: "Prompts and chat apps", re: /prompt|system message|few-shot|grounding|chat completion|responses api|sdk|playground|openai client/i },
+      { id: "agents", name: "Agents", re: /agent|tool|knowledge|thread|instruction|file search|code interpreter|agentic/i },
+      { id: "text", name: "Text analysis", re: /sentiment|key phrase|keyword|entity|ner|pii|summariz|language detection|text analysis|azure language/i },
+      { id: "speech", name: "Speech", re: /speech|voice|audio|transcri|synthes|text to speech|speech to text|ssml|realtime/i },
+      { id: "vision", name: "Vision and image generation", re: /vision|image|ocr|object detection|classification|face|caption|multimodal|gpt-image|dall/i },
+      { id: "extract", name: "Information extraction", re: /content understanding|analyzer|document|form|invoice|field|extract|video/i },
+      { id: "other", name: "Other", re: /./ },
+    ],
+    examDay: [
+      "AI-901 is a fundamentals exam scored out of 1000 with 700 to pass. Expect conceptual questions plus some on Foundry SDK code, so know what a few lines of Python do.",
+      "Read the last sentence of the question first: it names the workload or Foundry feature you have to pick.",
+    ],
+  },
+  {
     id: "dbxde",
     code: "Databricks DE",
     title: "Databricks Certified Data Engineer Associate",
