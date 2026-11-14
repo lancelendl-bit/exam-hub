@@ -77,4 +77,18 @@ export const entries = [
     url: "https://learn.microsoft.com/en-us/credentials/certifications/exams/ai-200/",
     src: ["https://learn.microsoft.com/en-us/credentials/certifications/exams/ai-200/", "https://learn.microsoft.com/en-us/credentials/certifications/resources/study-guides/ai-200"], asOf: "2026-10", inApp: true,
   },
+  {
+    id: "ai901", vendor: "Microsoft", code: "AI-901", title: "Azure AI Fundamentals", level: "Fundamentals",
+    topics: ["AI and ML"], platforms: ["Azure"],
+    audience: "For people early in an AI development career who need the concepts of AI on Azure and the basics of building with Microsoft Foundry and Python.",
+    skills: [
+      { name: "Identify AI concepts and capabilities", weight: "40–45%" },
+      { name: "Implement AI solutions by using Microsoft Foundry", weight: "55–60%" },
+    ],
+    format: "",
+    prerequisites: "No prerequisite certification is stated; the study guide expects conceptual knowledge of AI on Azure, Python syntax, and familiarity with Azure resources. AI-901 replaced AI-900, which retired on June 30, 2026.",
+    buildsOn: ["az900"],
+    url: "https://learn.microsoft.com/en-us/credentials/certifications/exams/ai-901/",
+    src: ["https://learn.microsoft.com/en-us/credentials/certifications/resources/study-guides/ai-901", "https://learn.microsoft.com/en-us/credentials/support/retired-certification-exams"], asOf: "2026-11", inApp: true,
+  },
 ];
