@@ -60,11 +60,11 @@ export const e1=[
  opts:["Face detection, which returns the location rectangle of each face in a frame","Face identification, which matches each face against a group of known people","Face verification, which checks whether two face images show the same person","Image classification, which predicts a single label for the whole video frame"],a:0,
  ex:`Face detection finds human faces and returns the rectangle coordinates of their locations, which is all a blurring step needs, and face redaction is a listed use case. Identification and verification are recognition operations that compare faces to establish who someone is.`},
 
-/* src: https://learn.microsoft.com/en-us/azure/ai-services/content-understanding/audio/overview */
-{s:0,d:1,t:"multi",n:2,ref:"Content Understanding prebuilt-callCenter summary sentiment role detection",
- stem:`A company wants insights from recorded support calls by using the post-call analysis prebuilt analyzer in Azure Content Understanding in Foundry Tools. Which two outputs does this analyzer produce? Each correct answer presents part of the solution.`,
- opts:["A summary of what happened during each call","A transcript in which speakers are labeled as agent or customer","A synthesized audio version of the call in a different voice","A bounding box around each person seen on the agent's webcam","A translated copy of the recording dubbed into a second language"],a:[0,1],
- ex:`The prebuilt-callCenter analyzer returns transcripts with speaker role detection, a call summary, call sentiment, mentioned companies and people, and call categories. It doesn't synthesize or dub audio, and it analyzes audio, not webcam video.`},
+/* src: https://learn.microsoft.com/en-us/training/modules/fundamentals-generative-ai/7-agents */
+{s:0,d:1,t:"single",ref:"multi-agent system specialized agents collaborate",
+ stem:`A procurement workflow needs one AI component to gather supplier quotes, another to analyze them, and a third to place the order. Each component has its own specialty. What is this design called?`,
+ opts:["A single agent whose one large prompt covers all three of the tasks","A text analysis pipeline that chains entity and key phrase extraction","A computer vision pipeline that reads each quote by using OCR alone","A multi-agent system in which specialized agents collaborate on tasks"],a:3,
+ ex:`In a multi-agent system, several agents each have a specialty, such as gathering, analyzing, or acting, and they work together through prompts. One agent could attempt everything, but the scenario describes separate specialized components.`},
 
 /* src: https://learn.microsoft.com/en-us/training/modules/introduction-ai-speech/2-speech-solutions */
 {s:0,d:1,t:"multi",n:2,ref:"speech recognition scenarios captions dictation",
@@ -140,11 +140,11 @@ export const e2=[
  opts:["Azure Language summarization, which condenses the text of each lecture's slides","Azure Content Understanding, which analyzes the video into transcripts and segments","Azure Speech text to speech avatar, which produces a talking-presenter video","An image generation model, which creates a new thumbnail image for each lecture"],a:1,
  ex:`The Content Understanding video analyzer produces WebVTT transcripts, key frames, segment descriptions, and scene segmentation in a RAG-ready format that an agent can use. A text to speech avatar creates new video. It doesn't analyze existing video.`},
 
-/* src: https://learn.microsoft.com/en-us/training/modules/fundamentals-generative-ai/7-agents */
-{s:0,d:1,t:"single",ref:"multi-agent system specialized agents collaborate",
- stem:`A procurement workflow needs one AI component to gather supplier quotes, another to analyze them, and a third to place the order. Each component has its own specialty. What is this design called?`,
- opts:["A single agent whose one large prompt covers all three of the tasks","A text analysis pipeline that chains entity and key phrase extraction","A computer vision pipeline that reads each quote by using OCR alone","A multi-agent system in which specialized agents collaborate on tasks"],a:3,
- ex:`In a multi-agent system, several agents each have a specialty, such as gathering, analyzing, or acting, and they work together through prompts. One agent could attempt everything, but the scenario describes separate specialized components.`},
+/* src: https://learn.microsoft.com/en-us/azure/ai-services/content-understanding/audio/overview */
+{s:0,d:1,t:"multi",n:2,ref:"Content Understanding prebuilt-callCenter summary sentiment role detection",
+ stem:`A company wants insights from recorded support calls by using the post-call analysis prebuilt analyzer in Azure Content Understanding in Foundry Tools. Which two outputs does this analyzer produce? Each correct answer presents part of the solution.`,
+ opts:["A summary of what happened during each call","A transcript in which speakers are labeled as agent or customer","A synthesized audio version of the call in a different voice","A bounding box around each person seen on the agent's webcam","A translated copy of the recording dubbed into a second language"],a:[0,1],
+ ex:`The prebuilt-callCenter analyzer returns transcripts with speaker role detection, a call summary, call sentiment, mentioned companies and people, and call categories. It doesn't synthesize or dub audio, and it analyzes audio, not webcam video.`},
 
 /* src: https://learn.microsoft.com/en-us/azure/ai-services/language-service/overview */
 {s:0,d:1,t:"multi",n:2,ref:"Azure Language transcribed conversations PII summarization",
